@@ -19,6 +19,12 @@ cd ..
 mkdir build 
 cd build 
 ```
+
+### Создайте .env
+```
+TOKEN=ВАШ_ТОКЕН
+```
+
 ### Сборка бота
 ```shell
 cmake ..
