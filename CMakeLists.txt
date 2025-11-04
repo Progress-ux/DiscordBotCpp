@@ -3,6 +3,8 @@
 cmake_minimum_required(VERSION 3.15)
 project(OverallProject LANGUAGES CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # DPP
 add_subdirectory(libs/DPP)
 
