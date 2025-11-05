@@ -11,8 +11,8 @@ add_subdirectory(libs/DPP)
 # OGG
 add_subdirectory(libs/ogg)
 
-# Opus
-add_subdirectory(libs/opus)
+# Opusfile
+add_subdirectory(libs/opusfile)
 
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
 
@@ -26,4 +26,4 @@ target_include_directories(main
 
 target_link_libraries(main PRIVATE dpp)
 target_link_libraries(main PRIVATE ogg)
-target_link_libraries(main PRIVATE opus)
+target_link_libraries(main PRIVATE opusfile)
