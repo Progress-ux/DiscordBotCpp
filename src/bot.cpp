@@ -1,6 +1,7 @@
 #include "bot.h"
 #include <fstream>
 
+
 Bot::Bot(const std::string& env_file) {
    env_vars = load_env(env_file);
 
@@ -23,6 +24,16 @@ void Bot::run()
 void Bot::add_command(std::shared_ptr<Command> cmd)
 {
    commands.push_back(cmd);
+}
+
+MusicHandler &Bot::getMusicHandler(dpp::snowflake guild_id)
+{
+   if (music_handlers.find(guild_id) == music_handlers.end()) {
+      music_handlers[guild_id] = std::make_unique<MusicHandler>();
+      std::cout << "Created MusicHandler for server: " << guild_id << std::endl;
+   }
+
+   return *music_handlers[guild_id];
 }
 
 std::string Bot::getToken()
@@ -54,10 +65,21 @@ void Bot::register_events()
 
 void Bot::register_commands()
 {
+   std::vector<dpp::slashcommand> cmds;
    for(auto& cmd : commands)
    {
-      bot->global_command_create(dpp::slashcommand(cmd->name(), cmd->description(), bot->me.id));
+      dpp::slashcommand slash (cmd->name(), cmd->description(), bot->me.id);
+
+      if(cmd->name() == "play")
+      {
+         slash.add_option(
+            dpp::command_option(dpp::co_string, "url", "url Youtube video", true)
+         );       
+      }
+      cmds.push_back(slash);
    }
+   
+   bot->global_bulk_command_create(cmds);
 }
 
 std::map<std::string, std::string> Bot::load_env(const std::string& filename)

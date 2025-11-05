@@ -5,6 +5,7 @@
 #include <memory>
 #include <dpp/dpp.h>
 #include "command.h"
+#include "musichandler.h"
 
 class Bot
 {
@@ -12,6 +13,8 @@ private:
    std::unique_ptr<dpp::cluster> bot;
    std::map<std::string, std::string> env_vars;
    std::vector<std::shared_ptr<Command>> commands;
+
+   std::map<dpp::snowflake, std::unique_ptr<MusicHandler>> music_handlers;
 
    std::map<std::string, std::string> load_env(const std::string& env_file = "../.env");
    std::string getToken();
@@ -22,6 +25,8 @@ public:
    Bot(const std::string& env_file = "../.env");
    void run();
    void add_command(std::shared_ptr<Command> cmd);
+
+   MusicHandler& getMusicHandler(dpp::snowflake guild_id);
 };
 
 

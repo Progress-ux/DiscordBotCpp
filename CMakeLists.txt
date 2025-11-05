@@ -8,6 +8,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # DPP
 add_subdirectory(libs/DPP)
 
+# OGG
+add_subdirectory(libs/ogg)
+
+# Opus
+add_subdirectory(libs/opus)
+
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
 
 add_executable(main ${SRC_FILES})
@@ -19,3 +25,5 @@ target_include_directories(main
 )
 
 target_link_libraries(main PRIVATE dpp)
+target_link_libraries(main PRIVATE ogg)
+target_link_libraries(main PRIVATE opus)

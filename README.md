@@ -11,6 +11,8 @@ cd DiscordBotCpp
 mkdir libs
 cd libs
 git clone https://github.com/brainboxdotcc/DPP.git
+git clone https://github.com/xiph/ogg.git  
+git clone https://github.com/xiph/opus.git
 cd ..
 ```
 
