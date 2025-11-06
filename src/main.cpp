@@ -10,7 +10,7 @@ int main(int argc, char const *argv[])
 
     bot.add_command(std::make_shared<PingCommand>());
     bot.add_command(std::make_shared<JoinCommand>());
-    bot.add_command(std::make_shared<PlayCommand>());
+    bot.add_command(std::make_shared<PlayCommand>(bot));
 
     bot.run();
     return 0;

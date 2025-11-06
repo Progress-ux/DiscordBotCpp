@@ -22,6 +22,7 @@ target_include_directories(main
    PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/include
       ${CMAKE_CURRENT_SOURCE_DIR}/libs/DPP/include
+      ${CMAKE_CURRENT_SOURCE_DIR}/libs/opusfile/include
 )
 
 target_link_libraries(main PRIVATE dpp)

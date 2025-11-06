@@ -8,9 +8,10 @@ class PlayCommand : public Command
 {
 private:
    Bot& bot;
-   MusicHandler& musicHandler;
 
 public:
+   PlayCommand(Bot& b);
+
    std::string name() const override { return "play"; }
    std::string description() const override { return "Play audio"; }
    void execute(const dpp::slashcommand_t& event) override;

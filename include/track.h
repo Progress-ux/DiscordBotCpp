@@ -5,7 +5,7 @@
 class Track
 {
 private:
-   const std::string BEGIN_URL = "https://youtu.be/"; 
+   inline static const std::string BEGIN_URL = "https://youtu.be/"; 
 
    std::string author = "Unknown";
    std::string title = "Unknown";
@@ -18,9 +18,9 @@ public:
    void setUrl(const std::string& url);
    void setDuration(const std::string& duration);
 
-   const std::string& getAuthor() { return author; }
-   const std::string& getTitle() { return title; }
-   const std::string& getUrl() { return url; }
-   const std::string& getDuration() { return duration; }
-   const std::string& getBeginUrl() { return BEGIN_URL; }
+   const std::string& getAuthor() const { return author; }
+   const std::string& getTitle() const { return title; }
+   const std::string& getUrl() const { return url; }
+   const std::string& getDuration() const { return duration; }
+   static const std::string& getBeginUrl() { return BEGIN_URL; }
 };
