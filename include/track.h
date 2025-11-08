@@ -23,4 +23,6 @@ public:
    const std::string& getUrl() const { return url; }
    const std::string& getDuration() const { return duration; }
    static const std::string& getBeginUrl() { return BEGIN_URL; }
+
+   std::string getInfo();
 };

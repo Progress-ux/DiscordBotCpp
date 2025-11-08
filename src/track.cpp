@@ -19,3 +19,11 @@ void Track::setDuration(const std::string& duration)
 {
    this->duration = duration;
 }
+
+std::string Track::getInfo()
+{
+   std::string info = author + "\n" +
+                      title + "\n" +
+                      duration + "\n";
+   return info;
+}

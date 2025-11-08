@@ -3,6 +3,7 @@
 #include "command.h"
 #include <dpp/dpp.h>
 #include "bot.h"
+#include "track.h"
 
 class PlayCommand : public Command
 {
