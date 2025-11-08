@@ -3,7 +3,6 @@
 #include <opusfile.h>
 #include <string>
 #include <nlohmann/json.hpp>
-#include <thread>
 
 PlayCommand::PlayCommand(Bot &b) : bot(b) {}
 
@@ -54,11 +53,12 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
       track.setUrl(val_url);
       track.setDuration(std::to_string(result.value("duration", 0)));
 
+
       musicHandler.addTrack(track);
       event.edit_response("▶️ Воспроизвожу: **" + track.getTitle() + "**");
 
       std::string ffmpeg_cmd =
-         "ffmpeg -i \"" + result["stream_url"] +
+         "ffmpeg -i \"" + std::string(result["stream_url"]) +
          "\" -c:a libopus -b:a 128k -ar 48000 -ac 2 -f ogg pipe:1 2>/dev/null";
 
       // Воспроизведение в голосовой канал в opus формате

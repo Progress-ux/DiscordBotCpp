@@ -1,7 +1,6 @@
 #include "bot.h"
 #include <fstream>
 
-
 Bot::Bot(const std::string& env_file) {
    env_vars = load_env(env_file);
 
