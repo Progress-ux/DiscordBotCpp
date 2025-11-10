@@ -1,5 +1,5 @@
 #include "stop_command.h"
-#include "discordvoiceclient.h"
+#include <dpp/discordvoiceclient.h>
 
 void StopCommand::execute(const dpp::slashcommand_t &event)
 {
@@ -8,5 +8,5 @@ void StopCommand::execute(const dpp::slashcommand_t &event)
    { 
       v->voiceclient->stop_audio();
    }
-   event.reply("Audio stoped");
+   event.reply("Audio stopped");
 }

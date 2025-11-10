@@ -1,8 +1,14 @@
 #include "play_command.h"
-#include <ogg/ogg.h>
-#include <opusfile.h>
 #include <string>
-#include <nlohmann/json.hpp>
+#include <vector>
+
+extern "C" {
+   #include <libavformat/avformat.h>
+   #include <libavcodec/codec.h>
+   #include <libavcodec/avcodec.h>
+   #include <libswresample/swresample.h>
+}
+
 
 PlayCommand::PlayCommand(Bot &b) : bot(b) {}
 
@@ -16,100 +22,167 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
       // Плеер по guild_id сервера
       // Хранит историю треков
       auto& musicHandler = bot.getMusicHandler(event.command.guild_id);
-      musicHandler.setState(MusicHandler::State::Playing);
 
       if (!v || !v->voiceclient || !v->voiceclient->is_ready()) {
-         event.edit_response("❌ Ошибка: я не в голосовом канале!");
-         musicHandler.setState(MusicHandler::State::Idle);
+         event.edit_response("Error: I'm not in the voice channel!");
          return;
       }
       
       auto val = event.get_parameter("url");
       std::string val_url = std::get<std::string>(val);
       
-      // Загрузка стрим ссылки для воспроизведения
-      std::string yt_dlp_cmd = "python3 worker.py " + val_url;
-      FILE* yt_dlp = popen(yt_dlp_cmd.c_str(), "r");
-      if(!yt_dlp)
+      musicHandler.extractInfo(musicHandler, val_url);
+
+      event.edit_response("**" + musicHandler.getCurrentTrack()->getTitle() + "**" + " added to queue");
+      
+      if(musicHandler.getIsPlaying())
+         return;
+
+         
+      while(true)
       {
-         std::cerr << "Cannot start worker.py" << std::endl;
-         return;
+         if(musicHandler.isEmpty())
+            break;
+         
+         if(musicHandler.getIsPlaying())
+            continue;
+            
+         musicHandler.setIsPlaying(true);
+
+         std::cout << "while" << std::endl;
+
+         Track track; 
+         track = musicHandler.getNextTrack();
+
+         playTrack(track, v, musicHandler);
       }
-
-      std::string json_data;
-      char buffer[1024];
-      while (fgets(buffer, sizeof(buffer), yt_dlp)) {
-         json_data += buffer;
-      }
-      pclose(yt_dlp);
-
-      // Данные полученные из worker.py 
-      nlohmann::json result = nlohmann::json::parse(json_data);
-
-      // Хранит информацию о треке
-      Track track;
-      track.setTitle(result["title"]);
-      track.setAuthor(result["author"]);
-      track.setUrl(val_url);
-      track.setDuration(std::to_string(result.value("duration", 0)));
-
-
-      musicHandler.addTrack(track);
-      event.edit_response("▶️ Воспроизвожу: **" + track.getTitle() + "**");
-
-      std::string ffmpeg_cmd =
-         "ffmpeg -i \"" + std::string(result["stream_url"]) +
-         "\" -c:a libopus -b:a 128k -ar 48000 -ac 2 -f ogg pipe:1 2>/dev/null";
-
-      // Воспроизведение в голосовой канал в opus формате
-      FILE* ffmpeg = popen(ffmpeg_cmd.c_str(), "r");
-      if (!ffmpeg) {
-         event.edit_response("❌ Ошибка запуска ffmpeg");
-         musicHandler.setState(MusicHandler::State::Idle);
-         return;
-      }
-
-      ogg_sync_state oy;
-      ogg_stream_state os;
-      ogg_page og;
-      ogg_packet op;
-
-      ogg_sync_init(&oy);
-      bool stream_initialized = false;
-
-      while (true) {
-         char* buf = ogg_sync_buffer(&oy, 4096);
-         int bytes = fread(buf, 1, 4096, ffmpeg);
-         if (bytes == 0) break;
-         ogg_sync_wrote(&oy, bytes);
-
-         while (ogg_sync_pageout(&oy, &og) == 1) {
-            if (!stream_initialized) {
-                  ogg_stream_init(&os, ogg_page_serialno(&og));
-                  stream_initialized = true;
-            }
-
-            ogg_stream_pagein(&os, &og);
-
-            while (ogg_stream_packetout(&os, &op) == 1) {
-                  if (op.bytes > 8 && !memcmp("OpusHead", op.packet, 8))
-                     continue;
-                  if (op.bytes > 8 && !memcmp("OpusTags", op.packet, 8))
-                     continue;
-
-                  int samples = opus_packet_get_samples_per_frame(op.packet, 48000);
-                  v->voiceclient->send_audio_opus(op.packet, op.bytes, samples / 48);
-            }
-         }
-      }
-
-      ogg_stream_clear(&os);
-      ogg_sync_clear(&oy);
-
-      pclose(ffmpeg);
-
-      musicHandler.setState(MusicHandler::State::Idle);
-   } catch (const std::exception& e) {
-      event.edit_response(std::string("❌ Ошибка: ") + e.what());
+      
+   } 
+   catch (const std::exception& e) 
+   {
+      event.edit_response(std::string("Error: ") + e.what());
    }
+}
+
+void PlayCommand::playTrack(Track &track, dpp::voiceconn *v, MusicHandler &musicHandler)
+{
+   try
+   {
+      std::cout << "playTrack()\n";
+
+      AVFormatContext *fmt = nullptr;
+      if (avformat_open_input(&fmt, track.getStreamUrl().c_str(), nullptr, nullptr) < 0)
+         throw std::runtime_error("Cannot open stream");
+
+      if (avformat_find_stream_info(fmt, nullptr) < 0)
+         throw std::runtime_error("Cannot get stream info");
+
+      int audio_stream = av_find_best_stream(fmt, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+
+      if (audio_stream < 0)
+         throw std::runtime_error("No audio stream found");
+
+      AVStream* stream = fmt->streams[audio_stream];
+
+      const AVCodec *dec = avcodec_find_decoder(stream->codecpar->codec_id);
+      if (!dec)
+         throw std::runtime_error("Decoder not found");
+
+
+      AVCodecContext *dec_ctx = avcodec_alloc_context3(dec);
+
+      if (avcodec_parameters_to_context(dec_ctx, stream->codecpar) < 0)
+         throw std::runtime_error("Failed to copy codec params");
+
+      if (avcodec_open2(dec_ctx, dec, nullptr) < 0)
+         throw std::runtime_error("Cannot open decoder");
+
+      AVChannelLayout out_ch_layout;
+      av_channel_layout_default(&out_ch_layout, 2);
+
+      SwrContext *swr = nullptr; 
+      if(swr_alloc_set_opts2(
+         &swr,
+         &out_ch_layout,
+         AV_SAMPLE_FMT_S16,
+         48000,
+         &dec_ctx->ch_layout,
+         dec_ctx->sample_fmt,
+         dec_ctx->sample_rate,
+         0,
+         nullptr
+      ) < 0)
+         throw std::runtime_error("Failed to init swr");
+
+      if (swr_init(swr) < 0)
+         throw std::runtime_error("swr_init failed");
+
+      AVPacket *pkt = av_packet_alloc();
+      AVFrame *frame = av_frame_alloc();
+
+      std::vector<uint8_t> pcm_buf;
+      pcm_buf.reserve(11520);
+
+      while (av_read_frame(fmt, pkt) >= 0)
+      {
+         if(pkt->stream_index != audio_stream)
+         {
+            av_packet_unref(pkt);
+            continue;
+         }
+
+         avcodec_send_packet(dec_ctx, pkt);
+
+         while (avcodec_receive_frame(dec_ctx, frame) >= 0)
+         {
+            int out_samples = av_rescale_rnd(
+               swr_get_delay(swr, dec_ctx->sample_rate) + frame->nb_samples,
+               48000,
+               dec_ctx->sample_rate,
+               AV_ROUND_UP
+            );
+
+            int out_buf_size = out_samples * 2 * sizeof(int16_t);
+
+            std::vector<uint8_t> conv_buf(out_buf_size);
+            uint8_t* out_planes[1] = { conv_buf.data() };
+
+            swr_convert(
+               swr, 
+               out_planes, 
+               out_samples, 
+               (const uint8_t**)frame->extended_data, 
+               frame->nb_samples
+            );
+            
+            pcm_buf.insert(pcm_buf.end(), conv_buf.begin(), conv_buf.end());
+
+            while (pcm_buf.size() >= 11520)
+            {
+               v->voiceclient->send_audio_raw(
+                  (uint16_t*)pcm_buf.data(), 
+                  11520
+               );
+               pcm_buf.erase(pcm_buf.begin(), pcm_buf.begin() + 11520);
+            }
+            
+         }
+
+         av_packet_unref(pkt);
+         
+      }
+
+      av_frame_free(&frame);
+      av_packet_free(&pkt);
+      swr_free(&swr);
+      avcodec_free_context(&dec_ctx);
+      avformat_close_input(&fmt);
+
+      musicHandler.setIsPlaying(false);
+   }
+   catch(const std::exception& e)
+   {
+      std::cerr << e.what() << '\n';
+   }
+   
 }

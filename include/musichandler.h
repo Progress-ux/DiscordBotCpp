@@ -1,38 +1,40 @@
 #pragma once
 
 #include "track.h"
-#include <vector>
+#include <dpp/dpp.h>
 #include <optional>
 #include <mutex>
+#include <atomic>
+#include <thread>
+#include <queue>
 
 class MusicHandler
 {
 private:
-   std::vector<Track> playlist;
-   size_t current_index = 0;
+   std::queue<Track> queue;
+   std::queue<Track> history;
    mutable std::mutex mtx;
 
+   bool is_playing = false;
+   
+   bool stop_flag;
+   std::thread player_thread;
+   
 public:
-enum class State { Idle, Playing, Paused };
+   MusicHandler();
 
-private:
-   State state = State::Idle;
-
-public:
    void addTrack(Track track);
-   void removeTrack(size_t index);
+
+   void extractInfo(MusicHandler& musichandler, std::string& url);
 
    std::optional<Track> getCurrentTrack() const;
-   std::optional<Track> getNextTrack();
+   Track getNextTrack();
 
    bool isEmpty();
+
    void clear();
    size_t size();
 
-   void setState(State state);
-   State getState() const
-   {
-      std::lock_guard<std::mutex> lock(mtx);   
-      return state;
-   }
+   void setIsPlaying(bool is_playing);
+   bool getIsPlaying();
 };

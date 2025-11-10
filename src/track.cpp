@@ -15,6 +15,11 @@ void Track::setUrl(const std::string& url)
    this->url = url;
 }
 
+void Track::setStreamUrl(const std::string &stream_url)
+{
+   this->stream_url = stream_url;
+}
+
 void Track::setDuration(const std::string& duration)
 {
    this->duration = duration;
