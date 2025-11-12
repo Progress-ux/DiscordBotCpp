@@ -25,15 +25,26 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
       
       musicHandler.extractInfo(musicHandler, val_url);
 
-      event.edit_response("**" + musicHandler.getCurrentTrack()->getTitle() + "**" + " added to queue");
-      
-      while(!musicHandler.isEmpty())
-      {
-         if(v->voiceclient->is_playing())
-            continue;
-            
-         musicHandler.playTrack(musicHandler.getNextTrack().getStreamUrl(), v);
-      }
+      auto lastTrack = musicHandler.getLastTrack().value();
+
+      std::string title = lastTrack.getTitle();
+      std::string author = lastTrack.getAuthor();
+      std::string duration = lastTrack.getDuration(); // in seconds
+      int minutes = std::stoi(duration) / 60;
+      int seconds = std::stoi(duration) % 60;
+
+      std::string response = 
+         "**Title:** " + title + "\n" +
+         "**Artist:** " + author + "\n" +
+         "**Duration:** " + std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds) + "\n" +
+         "**Queue Position:** " + std::to_string(musicHandler.size());
+
+      event.edit_response(response);
+
+      if(v->voiceclient->is_playing())
+         return;
+
+      musicHandler.playTrack(musicHandler.getNextTrack().getStreamUrl(), v);
    } 
    catch (const std::exception& e) 
    {

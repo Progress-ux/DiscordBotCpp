@@ -24,8 +24,6 @@ size_t MusicHandler::size()
    return queue.size();
 }
 
-
-
 std::optional<Track> MusicHandler::getCurrentTrack() const
 {
    if(queue.empty()) return std::nullopt;
@@ -37,6 +35,12 @@ Track MusicHandler::getNextTrack()
    Track track = queue.front();
    queue.pop();
    return track;
+}
+
+std::optional<Track> MusicHandler::getLastTrack()
+{
+   if(queue.empty()) return std::nullopt;
+   return queue.back();
 }
 
 void MusicHandler::extractInfo(MusicHandler &musicHandler, std::string &url)
@@ -139,5 +143,8 @@ void MusicHandler::playTrack(std::string url, dpp::voiceconn *v)
 
    pclose(ffmpeg);
    v->voiceclient->stop_audio();
+
+   if(!queue.empty())
+      playTrack(getNextTrack().getStreamUrl(), v);
 }
 

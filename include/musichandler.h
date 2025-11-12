@@ -22,6 +22,7 @@ public:
    void extractInfo(MusicHandler& musichandler, std::string& url);
 
    std::optional<Track> getCurrentTrack() const;
+   std::optional<Track>getLastTrack();
    Track getNextTrack();
 
    void setStopFlag(bool s) noexcept { stop_flag.store(s); }
