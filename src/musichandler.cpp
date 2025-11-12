@@ -89,6 +89,7 @@ void MusicHandler::extractInfo(MusicHandler &musicHandler, std::string &url)
       track.setUrl(track.getBeginUrl() + (std::string)result["id"]);
       track.setDuration(std::to_string(result.value("duration", 0)));
       track.setStreamUrl(result["url"]);
+   
       
       queue.push(track);
       
@@ -103,17 +104,37 @@ void MusicHandler::extractInfo(MusicHandler &musicHandler, std::string &url)
 void MusicHandler::playTrack(std::string url, dpp::voiceconn *v)
 {
    FILE* ffmpeg = popen(
-      ("ffmpeg -re -i \"" + url + "\" -f s16le -ar 48000 -ac 2 pipe:1 2>/dev/null").c_str(),
+      ("ffmpeg"  
+         " -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 2" 
+         " -re -i \"" 
+         + url + 
+         "\" -f s16le -ar 48000 -ac 2 pipe:1 2>/dev/null").c_str(),
       "r"
    );
 
+   if (!ffmpeg) 
+   {
+      std::cerr << "Failed to start FFmpeg\n";
+      return;
+   }
+
    std::vector<uint8_t> buf(11520);
-   while (true) {
-      while (v->voiceclient->is_paused()) 
+   while (true) 
+   {
+      while (v->voiceclient->is_paused())
          std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      
+
       size_t bytes_read = fread(buf.data(), 1, buf.size(), ffmpeg);
-      if (bytes_read == 0) break;
+      if (bytes_read == 0) 
+      {
+         if (feof(ffmpeg)) break;
+
+         if (ferror(ffmpeg)) 
+         {
+            std::cerr << "Error reading FFmpeg output\n";
+            break;
+         }
+      }
 
       if (bytes_read < buf.size())
          std::fill(buf.begin() + bytes_read, buf.end(), 0);
@@ -121,5 +142,9 @@ void MusicHandler::playTrack(std::string url, dpp::voiceconn *v)
       v->voiceclient->send_audio_raw(reinterpret_cast<uint16_t*>(buf.data()), buf.size());
    }
 
+   std::this_thread::sleep_for(std::chrono::seconds(5));
+
    pclose(ffmpeg);
+   v->voiceclient->stop_audio();
 }
+
