@@ -1,7 +1,6 @@
 #pragma once
 
 #include "command.h"
-#include <dpp/dpp.h>
 #include "bot.h"
 #include "track.h"
 
@@ -18,5 +17,5 @@ public:
    std::string description() const override { return "Play audio"; }
    void execute(const dpp::slashcommand_t& event) override;
 
-   void playTrack(Track &track, dpp::voiceconn *v, MusicHandler &musicHandler);
+   void playTrack(Track track, dpp::voiceconn *v, MusicHandler& musicHandler);
 };

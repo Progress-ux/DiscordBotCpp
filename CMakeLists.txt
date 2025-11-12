@@ -9,19 +9,11 @@ set(FFMPEG_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/libs/ffmpeg/ffmpeg_build)
 # DPP
 add_subdirectory(libs/DPP)
 
-# OGG
-add_subdirectory(libs/ogg)
-
-# Opusfile
-add_subdirectory(libs/opusfile)
-
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/libs/DPP/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/libs/opusfile/include
     ${FFMPEG_ROOT}/include
 )
 
@@ -37,8 +29,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${OPUS_INCLUDE_DIRS})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
    dpp
-   opusfile
-   ogg
    ${OPUS_LIBRARIES}
 
    ${FFMPEG_ROOT}/lib/libswscale.so

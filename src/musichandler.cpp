@@ -2,12 +2,12 @@
 #include <stdexcept>
 #include <nlohmann/json.hpp>
 #include <iostream>
-#include <ogg/ogg.h>
-#include <opusfile.h>
 
-MusicHandler::MusicHandler()
-{
-   stop_flag = false;
+extern "C" {
+   #include <libavformat/avformat.h>
+   #include <libavcodec/codec.h>
+   #include <libavcodec/avcodec.h>
+   #include <libswresample/swresample.h>
 }
 
 void MusicHandler::addTrack(Track track)
@@ -31,14 +31,19 @@ size_t MusicHandler::size()
    return queue.size();
 }
 
-void MusicHandler::setIsPlaying(bool is_playing)
+
+
+std::optional<Track> MusicHandler::getCurrentTrack() const
 {
-   this->is_playing = is_playing;
+   if(queue.empty()) return std::nullopt;
+   return queue.front();
 }
 
-bool MusicHandler::getIsPlaying()
+Track MusicHandler::getNextTrack() 
 {
-   return is_playing;
+   Track track = queue.front();
+   queue.pop();
+   return track;
 }
 
 void MusicHandler::extractInfo(MusicHandler &musicHandler, std::string &url)
@@ -84,7 +89,6 @@ void MusicHandler::extractInfo(MusicHandler &musicHandler, std::string &url)
       track.setUrl(track.getBeginUrl() + (std::string)result["id"]);
       track.setDuration(std::to_string(result.value("duration", 0)));
       track.setStreamUrl(result["url"]);
-   
       
       queue.push(track);
       
@@ -96,15 +100,26 @@ void MusicHandler::extractInfo(MusicHandler &musicHandler, std::string &url)
    
 }
 
-std::optional<Track> MusicHandler::getCurrentTrack() const
+void MusicHandler::playTrack(std::string url, dpp::voiceconn *v)
 {
-   if(queue.empty()) return std::nullopt;
-   return queue.front();
-}
+   FILE* ffmpeg = popen(
+      ("ffmpeg -re -i \"" + url + "\" -f s16le -ar 48000 -ac 2 pipe:1 2>/dev/null").c_str(),
+      "r"
+   );
 
-Track MusicHandler::getNextTrack() 
-{
-   Track track = queue.front();
-   queue.pop();
-   return track;
+   std::vector<uint8_t> buf(11520);
+   while (true) {
+      while (v->voiceclient->is_paused()) 
+         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      
+      size_t bytes_read = fread(buf.data(), 1, buf.size(), ffmpeg);
+      if (bytes_read == 0) break;
+
+      if (bytes_read < buf.size())
+         std::fill(buf.begin() + bytes_read, buf.end(), 0);
+
+      v->voiceclient->send_audio_raw(reinterpret_cast<uint16_t*>(buf.data()), buf.size());
+   }
+
+   pclose(ffmpeg);
 }

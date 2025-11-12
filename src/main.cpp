@@ -3,6 +3,8 @@
 #include "join_command.h"
 #include "play_command.h"
 #include "stop_command.h"
+#include "pause_command.h"
+#include "resume_command.h"
 #include <memory>
 
 int main(int argc, char const *argv[])
@@ -13,6 +15,8 @@ int main(int argc, char const *argv[])
     bot.add_command(std::make_shared<JoinCommand>());
     bot.add_command(std::make_shared<PlayCommand>(bot));
     bot.add_command(std::make_shared<StopCommand>());
+    bot.add_command(std::make_shared<PauseCommand>());
+    bot.add_command(std::make_shared<ResumeCommand>());
 
     bot.run();
     return 0;

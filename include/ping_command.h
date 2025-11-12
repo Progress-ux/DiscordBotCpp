@@ -1,6 +1,5 @@
 #pragma once
 #include "command.h"
-#include <dpp/dpp.h>
 
 class PingCommand : public Command 
 {

@@ -1,6 +1,6 @@
 #pragma once
 #include "command.h"
-#include <dpp/dpp.h>
+#include "bot.h"
 
 class StopCommand : public Command 
 {
