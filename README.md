@@ -14,6 +14,11 @@ git clone https://github.com/brainboxdotcc/DPP.git
 cd ..
 ```
 
+### Создайте .env
+```
+TOKEN=ВАШ_ТОКЕН
+```
+
 ### Установка FFmpeg Windows
 Для работы с аудио установите [FFmpeg](https://ffmpeg.org/download.html) и добавьте его в переменные окружения.
 
@@ -27,11 +32,6 @@ sudo pacman -S ffmpeg
 ```shell
 mkdir build 
 cd build 
-```
-
-### Создайте .env
-```
-TOKEN=ВАШ_ТОКЕН
 ```
 
 ### Сборка бота
