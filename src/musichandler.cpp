@@ -3,13 +3,6 @@
 #include <nlohmann/json.hpp>
 #include <iostream>
 
-extern "C" {
-   #include <libavformat/avformat.h>
-   #include <libavcodec/codec.h>
-   #include <libavcodec/avcodec.h>
-   #include <libswresample/swresample.h>
-}
-
 void MusicHandler::addTrack(Track track)
 {
    queue.push(track);
