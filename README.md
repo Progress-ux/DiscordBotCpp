@@ -11,10 +11,17 @@ cd DiscordBotCpp
 mkdir libs
 cd libs
 git clone https://github.com/brainboxdotcc/DPP.git
-git clone https://github.com/xiph/ogg.git  
-git clone https://github.com/xiph/opusfile
 cd ..
 ```
+
+### Установка FFmpeg Windows
+Для работы с аудио установите [FFmpeg](https://ffmpeg.org/download.html) и добавьте его в переменные окружения.
+
+### Установка FFmpeg Linux Arch
+```shell
+sudo pacman -S ffmpeg
+```
+
 
 ### Создание папки build 
 ```shell
@@ -36,5 +43,5 @@ cmake --build .
 
 ### Возможные команды 
 ```shell
-sudo pacman -S cmake
+sudo pacman -S cmake ffmpeg
 ```
