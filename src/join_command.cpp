@@ -8,6 +8,5 @@ void JoinCommand::execute(const dpp::slashcommand_t& event)
          event.reply("You don't seem to be in a voice channel!");
          return;
    }
-   
    event.reply("Joined your channel!");
 }

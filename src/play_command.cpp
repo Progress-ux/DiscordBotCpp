@@ -15,7 +15,8 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
       // Хранит историю треков
       auto& musicHandler = bot.getMusicHandler(event.command.guild_id);
 
-      if (!v || !v->voiceclient || !v->voiceclient->is_ready()) {
+      if (!v || !v->voiceclient || !v->voiceclient->is_ready()) 
+      {
          event.edit_response("Error: I'm not in the voice channel!");
          return;
       }
@@ -44,7 +45,7 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
       if(v->voiceclient->is_playing())
          return;
 
-      musicHandler.playTrack(musicHandler.getNextTrack().getStreamUrl(), v);
+      musicHandler.playTrack(musicHandler.getPopNextTrack().getStreamUrl(), v);
    } 
    catch (const std::exception& e) 
    {
