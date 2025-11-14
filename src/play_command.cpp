@@ -24,19 +24,17 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
       auto val = event.get_parameter("url");
       std::string val_url = std::get<std::string>(val);
       
-      musicHandler.extractInfo(musicHandler, val_url);
+      musicHandler.extractInfo(val_url);
 
-      auto lastTrack = musicHandler.getLastTrack().value();
+      auto &lastTrack = musicHandler.getLastTrack();
 
-      std::string title = lastTrack.getTitle();
-      std::string author = lastTrack.getAuthor();
       std::string duration = lastTrack.getDuration(); // in seconds
       int minutes = std::stoi(duration) / 60;
       int seconds = std::stoi(duration) % 60;
 
       std::string response = 
-         "**Title:** " + title + "\n" +
-         "**Artist:** " + author + "\n" +
+         "**Title:** " + lastTrack.getTitle() + "\n" +
+         "**Artist:** " + lastTrack.getAuthor() + "\n" +
          "**Duration:** " + std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds) + "\n" +
          "**Queue Position:** " + std::to_string(musicHandler.size());
 
@@ -45,7 +43,7 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
       if(v->voiceclient->is_playing())
          return;
 
-      musicHandler.playTrack(musicHandler.getPopNextTrack().getStreamUrl(), v);
+      musicHandler.startPlayer(v);
    } 
    catch (const std::exception& e) 
    {

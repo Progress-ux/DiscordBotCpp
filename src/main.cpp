@@ -6,6 +6,7 @@
 #include "pause_command.h"
 #include "resume_command.h"
 #include "skip_command.h"
+#include "back_command.h"
 #include <memory>
 
 int main(int argc, char const *argv[])
@@ -22,7 +23,9 @@ int main(int argc, char const *argv[])
     bot.add_command(std::make_shared<ResumeCommand>());
 
     bot.add_command(std::make_shared<PlayCommand>(bot));
+    
     bot.add_command(std::make_shared<SkipCommand>(bot));
+    bot.add_command(std::make_shared<BackCommand>(bot));
 
     bot.run();
     return 0;

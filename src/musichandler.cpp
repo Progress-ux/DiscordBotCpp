@@ -6,12 +6,22 @@
 
 void MusicHandler::addTrack(Track track)
 {
-   queue.push(track);
+   playlist.push_back(track);
 }
 
-bool MusicHandler::isEmpty()
+bool MusicHandler::isHistoryEmpty()
 {
-   return queue.empty(); 
+   return current_index == 0;
+}
+
+bool MusicHandler::isPlaylistEmpty()
+{
+   return playlist.empty();
+}
+
+bool MusicHandler::HasNextTrack()
+{
+   return current_index < playlist.size();
 }
 
 void MusicHandler::updateWorkingStreamLink(Track &track)
@@ -40,37 +50,51 @@ void MusicHandler::updateWorkingStreamLink(Track &track)
 
 void MusicHandler::clear()
 {
-   std::queue<Track> empty;
-   std::swap(queue, empty);
+   playlist.clear();
 }
 
 size_t MusicHandler::size()
 {
-   return queue.size();
+   return playlist.size();
 }
 
-std::optional<Track> MusicHandler::getCurrentTrack() const
+size_t MusicHandler::getCurrentIndex()
 {
-   if(queue.empty()) return std::nullopt;
-   return queue.front();
+   return current_index;
 }
 
-Track MusicHandler::getPopNextTrack() 
+Track& MusicHandler::getCurrentTrack() 
 {
-   Track track = queue.front();
-   queue.pop();
-   return track;
+   if (playlist.empty() || current_index >= playlist.size())
+      throw std::out_of_range("Playlist is empty or current_index out of range (getCurrentTrack)");
+
+   return playlist[current_index];
+}
+
+Track& MusicHandler::getLastTrack()
+{
+   if (playlist.empty())
+      throw std::out_of_range("Playlist is empty or current_index out of range (getLastTrack)");
+
+   return playlist[playlist.size()-1];
 }
 
 Track& MusicHandler::getNextTrack() 
 {
-   return queue.front();
+   if(current_index + 1 >= playlist.size())
+      throw std::out_of_range("Playlist is empty or current_index out of range (getNextTrack)");
+
+   ++current_index;
+   return playlist[current_index];
 }
 
-std::optional<Track> MusicHandler::getLastTrack()
+Track &MusicHandler::getBackTrack()
 {
-   if(queue.empty()) return std::nullopt;
-   return queue.back();
+   if(playlist.size() <= 1)
+      throw std::out_of_range("History is empty or current_index out of range (getBackTrack)");
+
+   --current_index;
+   return playlist[current_index];
 }
 
 void MusicHandler::extractInfo(Track &track)
@@ -108,13 +132,8 @@ void MusicHandler::extractInfo(Track &track)
       {
          std::cerr << "Error: json empty" << std::endl;
       }
-   
-      track.setTitle(result["title"]);
-      track.setAuthor(result["uploader"]);
-      track.setUrl(track.getBeginUrl() + (std::string)result["id"]);
-      track.setDuration(std::to_string(result.value("duration", 0)));
-      track.setStreamUrl(result["url"]);
       
+      track.setStreamUrl(result["url"]);
    }
    catch(const std::exception& e)
    {
@@ -122,7 +141,7 @@ void MusicHandler::extractInfo(Track &track)
    }
 }
 
-void MusicHandler::extractInfo(MusicHandler &musicHandler, std::string &url)
+void MusicHandler::extractInfo(std::string &url)
 {
    try
    {
@@ -165,16 +184,41 @@ void MusicHandler::extractInfo(MusicHandler &musicHandler, std::string &url)
       track.setUrl(track.getBeginUrl() + (std::string)result["id"]);
       track.setDuration(std::to_string(result.value("duration", 0)));
       track.setStreamUrl(result["url"]);
-   
       
-      queue.push(track);
-      
+      playlist.push_back(track);
    }
    catch(const std::exception& e)
    {
       std::cerr << e.what() << '\n';
    }
    
+}
+
+void MusicHandler::startPlayer(dpp::voiceconn *v)
+{
+   while(v->voiceclient->is_ready())
+   {
+      try
+      {
+         if(isPlaylistEmpty())
+            break;
+
+         playTrack(getCurrentTrack().getStreamUrl(), v);
+
+         if(isBackFlag())
+         {
+            setBackFlag(false);
+            extractInfo(getBackTrack());
+         }
+         else 
+            extractInfo(getNextTrack());
+      }
+      catch(const std::exception& e)
+      {
+         std::cerr << e.what() << '\n';
+         break;
+      }
+   }
 }
 
 void MusicHandler::playTrack(std::string stream_url, dpp::voiceconn *v)
@@ -197,8 +241,12 @@ void MusicHandler::playTrack(std::string stream_url, dpp::voiceconn *v)
    std::vector<uint8_t> buf(11520);
    while (true) 
    {
+      if (!v || !v->voiceclient) break;
       while (v->voiceclient->is_paused())
+      {
+         if (!v || !v->voiceclient) break;
          std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      }
 
       size_t bytes_read = fread(buf.data(), 1, buf.size(), ffmpeg);
       if (bytes_read == 0) 
@@ -215,36 +263,33 @@ void MusicHandler::playTrack(std::string stream_url, dpp::voiceconn *v)
       if (bytes_read < buf.size())
          std::fill(buf.begin() + bytes_read, buf.end(), 0);
 
-      if(skip_flag.load())
+      if(isSkipFlag())
       {
          setSkipFlag(false);
          break;
-      }   
+      }
 
-      if(stop_flag.load())
+      if(isBackFlag())
+         break;
+
+      if(isStopFlag())
       {
          setStopFlag(false);
          pclose(ffmpeg);
          return;
       }
 
-      if (!v && !v->voiceclient && !v->voiceclient->is_ready())
+      if (!v || !v->voiceclient)
          break;
 
       v->voiceclient->send_audio_raw(reinterpret_cast<uint16_t*>(buf.data()), buf.size());
    }
 
-   std::this_thread::sleep_for(std::chrono::seconds(5));
-
-   pclose(ffmpeg);
+   // std::this_thread::sleep_for(std::chrono::seconds(5));
+   if(ffmpeg)
+      pclose(ffmpeg);
    
    if (v && v->voiceclient && v->voiceclient->is_ready())
       v->voiceclient->stop_audio();
-
-   if (!queue.empty() && v && v->voiceclient && v->voiceclient->is_ready())
-   {
-      extractInfo(getNextTrack());
-      playTrack(getPopNextTrack().getStreamUrl(), v);
-   }
 }
 

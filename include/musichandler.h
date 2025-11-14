@@ -2,30 +2,31 @@
 
 #include "track.h"
 #include <dpp/dpp.h>
-#include <optional>
 #include <atomic>
-#include <queue>
+#include <vector>
 
 class MusicHandler
 {
 private:
-   std::queue<Track> queue;
-   std::queue<Track> history;
+   size_t current_index = 0;
+   std::vector<Track> playlist;
 
    std::atomic<bool> stop_flag;
    std::atomic<bool> skip_flag;
+   std::atomic<bool> back_flag;
 
+   void playTrack(std::string stream_url, dpp::voiceconn *v);
 public:
    void addTrack(Track track);
 
-   void extractInfo(MusicHandler& musichandler, std::string& url);
+   void extractInfo(std::string& url);
    void extractInfo(Track &track);
 
-   std::optional<Track> getCurrentTrack() const;
-   std::optional<Track> getLastTrack();
+   Track& getCurrentTrack();
+   Track& getLastTrack();
 
-   Track getPopNextTrack();
    Track& getNextTrack();
+   Track& getBackTrack();
 
    void setStopFlag(bool s) noexcept { stop_flag.store(s); }
    bool isStopFlag() const noexcept { return stop_flag.load(); }
@@ -33,9 +34,16 @@ public:
    void setSkipFlag(bool s) noexcept { skip_flag.store(s); }
    bool isSkipFlag() const noexcept { return skip_flag.load(); }
 
-   void playTrack(std::string stream_url, dpp::voiceconn *v);
+   void setBackFlag(bool s) noexcept { back_flag.store(s); }
+   bool isBackFlag() const noexcept { return back_flag.load(); }
 
-   bool isEmpty();
+   void startPlayer(dpp::voiceconn *v);
+
+   size_t getCurrentIndex();
+
+   bool isHistoryEmpty();
+   bool isPlaylistEmpty();
+   bool HasNextTrack();
 
    void updateWorkingStreamLink(Track &track);
 

@@ -1,8 +1,8 @@
-#include "skip_command.h"
+#include "back_command.h"
 
-SkipCommand::SkipCommand(Bot& b) : bot(b) {}
+BackCommand::BackCommand(Bot &b) : bot(b) {}
 
-void SkipCommand::execute(const dpp::slashcommand_t &event)
+void BackCommand::execute(const dpp::slashcommand_t &event)
 {
    event.thinking(); 
 
@@ -15,16 +15,17 @@ void SkipCommand::execute(const dpp::slashcommand_t &event)
       return;
    }
 
-   if(musicHandler.isPlaylistEmpty())
+   if (musicHandler.isHistoryEmpty())
    {
-      event.edit_response("Queue empty!");
+      event.edit_response("History empty!");
       return;
    }
-   
-   musicHandler.setSkipFlag(true);
+
+   musicHandler.setBackFlag(true);
 
    if (!v->voiceclient->is_playing())
       musicHandler.startPlayer(v);
-
-   event.edit_response("Audio skiped!");
+      
+   
+   event.edit_response("Returning to the previous track!");
 }
