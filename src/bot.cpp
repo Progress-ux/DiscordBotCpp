@@ -28,7 +28,7 @@ void Bot::add_command(std::shared_ptr<Command> cmd)
 MusicHandler &Bot::getMusicHandler(dpp::snowflake guild_id)
 {
    if (music_handlers.find(guild_id) == music_handlers.end()) {
-      music_handlers[guild_id] = std::make_unique<MusicHandler>();
+      music_handlers[guild_id] = std::make_unique<MusicHandler>(bot.get(), guild_id);
       std::cout << "Created MusicHandler for server: " << guild_id << std::endl;
    }
 

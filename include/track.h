@@ -28,4 +28,6 @@ public:
    static const std::string& getBeginUrl() { return BEGIN_URL; }
 
    std::string getInfo();
+
+   bool empty();
 };

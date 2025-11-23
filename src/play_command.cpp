@@ -1,49 +1,61 @@
 #include "play_command.h"
 #include <string>
 #include <vector>
+#include <memory>
 
 PlayCommand::PlayCommand(Bot &b) : bot(b) {}
 
 void PlayCommand::execute(const dpp::slashcommand_t &event)
 {
    event.thinking(); 
-
+   
    try {
-      dpp::voiceconn* v = event.from()->get_voice(event.command.guild_id);
-      
-      // Плеер по guild_id сервера
-      // Хранит историю треков
+      dpp::voiceconn *v = event.from()->get_voice(event.command.guild_id);
+      /**
+       * @note Музыкальный проигрыватель
+       */
       auto& musicHandler = bot.getMusicHandler(event.command.guild_id);
-
-      if (!v || !v->voiceclient || !v->voiceclient->is_ready()) 
+      if (!v) 
       {
          event.edit_response("Error: I'm not in the voice channel!");
          return;
       }
-      
+
       auto val = event.get_parameter("url");
       std::string val_url = std::get<std::string>(val);
       
-      musicHandler.extractInfo(val_url);
+      if(!musicHandler.isValidUrl(val_url))
+      {
+         event.edit_response("Error: Invalid link entered!");
+         return;
+      }
 
-      auto &lastTrack = musicHandler.getLastTrack();
-
-      std::string duration = lastTrack.getDuration(); // in seconds
+      Track track = musicHandler.extractInfo(val_url);
+      
+      if(track.empty())
+      {
+         event.edit_response("Error: Failed to retrieve information!");
+         return;
+      }
+      
+      musicHandler.addTrack(track);
+      
+      std::string duration = track.getDuration(); // in seconds
       int minutes = std::stoi(duration) / 60;
       int seconds = std::stoi(duration) % 60;
-
+      
       std::string response = 
-         "**Title:** " + lastTrack.getTitle() + "\n" +
-         "**Artist:** " + lastTrack.getAuthor() + "\n" +
-         "**Duration:** " + std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds) + "\n" +
-         "**Queue Position:** " + std::to_string(musicHandler.size());
-
+      "**Title:** " + track.getTitle() + "\n" +
+      "**Artist:** " + track.getAuthor() + "\n" +
+      "**Duration:** " + std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds) + "\n" +
+      "**Queue Position:** " + std::to_string(musicHandler.queueSize());
+      
       event.edit_response(response);
-
-      if(v->voiceclient->is_playing())
+      
+      if (!v /* && !isPlaying*/) //TODO: Add play flag
          return;
 
-      musicHandler.startPlayer(v);
+      musicHandler.Player(v);
    } 
    catch (const std::exception& e) 
    {

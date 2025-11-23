@@ -32,3 +32,8 @@ std::string Track::getInfo()
                       duration + "\n";
    return info;
 }
+
+bool Track::empty()
+{
+   return stream_url == "";
+}
