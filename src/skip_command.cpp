@@ -26,6 +26,6 @@ void SkipCommand::execute(const dpp::slashcommand_t &event)
    event.edit_response("Audio skiped!");
 
    if (v /* && !isPlaying*/) //TODO: Add play flag
-      musicHandler.Player(v);
+      musicHandler.Player();
 
 }

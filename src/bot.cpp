@@ -1,5 +1,6 @@
 #include "bot.h"
 #include <fstream>
+#include <dpp/intents.h>
 
 Bot::Bot(const std::string& env_file) {
    env_vars = load_env(env_file);
@@ -10,7 +11,7 @@ Bot::Bot(const std::string& env_file) {
       std::exit(EXIT_FAILURE);
    }
 
-   bot = std::make_unique<dpp::cluster>(token);
+   bot = std::make_unique<dpp::cluster>(token, dpp::i_default_intents | dpp::i_guild_voice_states);
    
    register_events();
 }
@@ -28,7 +29,7 @@ void Bot::add_command(std::shared_ptr<Command> cmd)
 MusicHandler &Bot::getMusicHandler(dpp::snowflake guild_id)
 {
    if (music_handlers.find(guild_id) == music_handlers.end()) {
-      music_handlers[guild_id] = std::make_unique<MusicHandler>(bot.get(), guild_id);
+      music_handlers[guild_id] = std::make_unique<MusicHandler>(guild_id);
       std::cout << "Created MusicHandler for server: " << guild_id << std::endl;
    }
 
@@ -59,6 +60,9 @@ void Bot::register_events()
       if(dpp::run_once<struct register_bot_commands>()) {
          register_commands();
       }
+   });
+   bot->on_voice_ready([this](const dpp::voice_ready_t& event) {
+      std::cout << "Ready" << std::endl;
    });
 }
 

@@ -5,6 +5,8 @@
 #include <atomic>
 #include <vector>
 #include <deque>
+#include <mutex>
+#include <memory>
 
 /**
  * @class MusicHandler
@@ -12,24 +14,25 @@
  *
  * The class contains methods for adding and switching tracks, updating
  * working stream links via yt-dlp, as well as launching the main player loop.
- * Stores the current track, queue, history and a set of control flags.
+ * Stores the current track, queue, history and a sstd::weak_ptr<discord_voice_client>et of control flags.
  */
 class MusicHandler
 {
 private:
-   dpp::cluster *bot;                                  ///< Pointer to bot
+   std::weak_ptr<dpp::discord_voice_client> voice_client;
+
    dpp::snowflake guild_id;                   ///< Current server for the player
 
    Track current_track;                       ///< Current playing track.
-
+   
    std::deque<Track> queue;                   ///< Queue of tracks for playback.
    std::deque<Track> history;                 ///< History of recently played tracks.
-
+   
    std::atomic<bool> stop_flag;               ///< Playback stop flag.
    std::atomic<bool> skip_flag;               ///< Flag for skipping the current track.
    std::atomic<bool> back_flag;               ///< Flag for moving to the previous track.
    std::atomic<bool> disconnect_flag;         ///< Completion flag when the bot is disconnected.
-
+   
    /**
     * @brief Plays the audio stream through FFmpeg and sends PCM data to the voice channel.
     *
@@ -39,8 +42,8 @@ private:
     * @param stream_url Direct link to the audio stream.
     * @param v DPP voice connection.
     */
-   void playTrack(std::string stream_url, dpp::voiceconn *v);
-
+   void playTrack(std::string stream_url);
+   
 public:
    /**
     * @brief The constructor that accepts for writing the server with which it works 
@@ -48,14 +51,16 @@ public:
     * @param _bot Pointer to bot for permanent access to voiceconn
     * @param _guild_id ID of the server to which it will be linked
     */
-   MusicHandler(dpp::cluster *_bot, dpp::snowflake _guild_id) : bot(_bot), guild_id(_guild_id) {  }
+   MusicHandler(dpp::snowflake _guild_id) : guild_id(_guild_id) {  }
 
    /**
     * @brief Adds a new track to the queue.
     *
-    * @param track The track that will be placed at the end of the queue.
+    * @param url Video link.
+    * 
+    * Извлекает название, 
     */
-   void addTrack(Track track);
+   std::string addTrack(std::string &url);
 
    /**
     * @brief Retrieves track information via yt-dlp.
@@ -115,6 +120,10 @@ public:
     */
    Track& getBackTrack();
 
+   void setVoiceClient(std::shared_ptr <dpp::discord_voice_client> _voice_client) { voice_client = _voice_client; }
+
+   std::shared_ptr<dpp::discord_voice_client> getVoiceClient() { return voice_client.lock(); } 
+
    /// Setting and receiving the stop flag.
    void setStopFlag(bool s) noexcept { stop_flag.store(s); }
    bool isStopFlag() const noexcept { return stop_flag.load(); }
@@ -139,7 +148,7 @@ public:
     *
     * @param v DPP voice connection.
     */
-   void Player(dpp::voiceconn *v);
+   void Player();
 
    /**
     * @brief Checks if the history is empty.

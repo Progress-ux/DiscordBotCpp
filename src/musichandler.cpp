@@ -4,10 +4,38 @@
 #include <curl/curl.h>
 #include <iostream>
 #include <regex>
+#include <dpp/utility.h>
 
-void MusicHandler::addTrack(Track track)
+std::string MusicHandler::addTrack(std::string& url)
 {
-   queue.push_back(track);
+   try
+   {
+      if(!isValidUrl(url))
+         throw "Invalid link entered!";
+
+      Track track = extractInfo(url);
+      
+      if(track.empty())
+         throw "Failed to retrieve information!";
+
+      queue.push_back(track);
+
+      std::string duration = track.getDuration(); // in seconds
+      int minutes = std::stoi(duration) / 60;
+      int seconds = std::stoi(duration) % 60;
+
+      std::string response = 
+         "**Title:** " + track.getTitle() + "\n" +
+         "**Artist:** " + track.getAuthor() + "\n" +
+         "**Duration:** " + std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds) + "\n" +
+         "**Queue Position:** " + std::to_string(queueSize());
+
+      return response;
+   }
+   catch(const std::exception& e)
+   {
+      throw e.what();
+   }
 }
 
 bool MusicHandler::isHistoryEmpty()
@@ -39,7 +67,10 @@ size_t MusicHandler::historySize()
 Track& MusicHandler::getCurrentTrack() 
 {
    if(current_track.empty())
-      current_track = getNextTrack();
+   {
+      current_track = queue.front();
+      queue.pop_front();
+   }
 
    return current_track;
 }
@@ -65,8 +96,11 @@ Track &MusicHandler::getBackTrack()
 
 bool MusicHandler::isValidUrl(std::string &url)
 {
+   // const std::regex url_regex(
+   //    R"(^(https)://[^\s/$.?#].[^\s]*$)"
+   // );
    const std::regex url_regex(
-      R"(^(https)://[^\s/$.?#].[^\s]*$)"
+      R"(^https?://[a-zA-Z0-9\-\._~:/?#\[\]@!#&'()*+,;=%]+$)"
    );
    return std::regex_match(url, url_regex);
 }
@@ -157,10 +191,7 @@ Track MusicHandler::extractInfo(std::string &url)
    
       FILE* yt_dlp = popen(yt_dlp_cmd.c_str(), "r");
       if(!yt_dlp)
-      {
-         std::cerr << "Cannot run yt-dlp" << std::endl;
-         return track;
-      }
+         throw "Cannot run yt-dlp";
    
       std::string json_data;
       char buffer[1024];
@@ -172,10 +203,7 @@ Track MusicHandler::extractInfo(std::string &url)
       nlohmann::json result = nlohmann::json::parse(json_data);
    
       if (result.empty())
-      {
-         std::cerr << "Error: json empty" << std::endl;
-         return track;
-      }
+         throw "Error: json empty";
    
       // Stores track information
       track.setTitle(result["title"]);
@@ -187,22 +215,21 @@ Track MusicHandler::extractInfo(std::string &url)
    }
    catch(const std::exception& e)
    {
-      std::cerr << e.what() << '\n';
-      return track;
+      throw e.what();
    }
    
 }
 
-void MusicHandler::Player(dpp::voiceconn *v)
+void MusicHandler::Player()
 {
-   while(!isStopFlag())
+   while(true)
    {
       try
       {
-         if(!v)
-            return;
+         if(!voice_client.lock() || isStopFlag())
+            break;
 
-         playTrack(getCurrentTrack().getStreamUrl(), v);
+         playTrack(getCurrentTrack().getStreamUrl());
 
          if(isBackFlag())
          {
@@ -222,6 +249,9 @@ void MusicHandler::Player(dpp::voiceconn *v)
          }
          else 
          {
+            if(isQueueEmpty())
+               break;
+               
             updateWorkingStreamLink(getNextTrack());
             
             // The current track is added to the beginning of the story
@@ -237,7 +267,7 @@ void MusicHandler::Player(dpp::voiceconn *v)
    setStopFlag(false);
 }
 
-void MusicHandler::playTrack(std::string stream_url, dpp::voiceconn *v)
+void MusicHandler::playTrack(std::string stream_url)
 {
    FILE* ffmpeg = popen(
       ("ffmpeg"  
@@ -254,12 +284,10 @@ void MusicHandler::playTrack(std::string stream_url, dpp::voiceconn *v)
       return;
    }
 
+   u_int i = 0;
    std::vector<uint8_t> buf(11520);
-   while (true) 
+   while (!isStopFlag()) 
    {
-      
-
-      if (!v) break;
       // while (v /* && pause_flag*/) // TODO: Add flags or structure
       //    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
@@ -278,12 +306,26 @@ void MusicHandler::playTrack(std::string stream_url, dpp::voiceconn *v)
       if (bytes_read < buf.size())
          std::fill(buf.begin() + bytes_read, buf.end(), 0);
 
-      if(isSkipFlag() || isStopFlag() || isBackFlag() || isDisconnectFlag()) break;
+      if(isSkipFlag() || isBackFlag()) break;
+      if(isStopFlag() || isDisconnectFlag()) break;
       
-      if(v->voiceclient)
-         v->voiceclient->send_audio_raw(reinterpret_cast<uint16_t*>(buf.data()), buf.size());
+      if(auto vc = voice_client.lock())
+      {
+         if(vc->is_connected() && !vc->terminating)
+            vc->send_audio_raw(reinterpret_cast<uint16_t*>(buf.data()), buf.size());
+         else 
+            break;
+      } 
+      else 
+      {
+         if(i >= 5)
+            break;
+         ++i;
+         std::cerr << "Voice client destroyed from " << guild_id << ", cannot send audio. Attempt: " << i << "\n"; 
+         std::this_thread::sleep_for(std::chrono::seconds(1));
+         continue; 
+      }
    }
    pclose(ffmpeg);
-   std::this_thread::sleep_for(std::chrono::seconds(3));
 }
 
