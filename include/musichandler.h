@@ -58,7 +58,7 @@ public:
     * @param url Video link.
     * @return response: title, uploader, duration(formatted), queue position  
     */
-   std::string addTrack(std::string &url);
+   void addTrack(std::string &url);
 
    /**
     * @brief Retrieves track information via yt-dlp.
@@ -157,6 +157,13 @@ public:
     * @return true if the queue is empty.
     */
    bool isQueueEmpty();
+
+   /**
+    * @brief Formats the duration in seconds into a MM:SS or HH:MM::SS format string
+    * @param sec Duration in seconds (integer)
+    * @return Formatted duration string
+    */
+   std::string formatDuration(const std::string& sec_str);
 
    /**
     * @brief Checks the validity of a URL using a regular expression.

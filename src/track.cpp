@@ -25,6 +25,11 @@ void Track::setDuration(const std::string& duration)
    this->duration = duration;
 }
 
+void Track::setThumbnail(const std::string &thumbnail)
+{
+   this->thumbnail = thumbnail;
+}
+
 std::string Track::getInfo()
 {
    std::string info = author + "\n" +
@@ -35,5 +40,5 @@ std::string Track::getInfo()
 
 bool Track::empty()
 {
-   return stream_url == "";
+   return url.empty() && stream_url.empty();
 }

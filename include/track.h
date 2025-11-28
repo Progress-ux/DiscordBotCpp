@@ -12,6 +12,7 @@ private:
    std::string duration = "Unknown";
    std::string url;
    std::string stream_url;
+   std::string thumbnail;
 
 public:
    void setAuthor(const std::string& author);
@@ -19,12 +20,14 @@ public:
    void setUrl(const std::string& url);
    void setStreamUrl(const std::string& stream_url);
    void setDuration(const std::string& duration);
+   void setThumbnail(const std::string& thumbnail);
 
    const std::string& getAuthor() const { return author; }
    const std::string& getTitle() const { return title; }
    const std::string& getUrl() const { return url; }
    const std::string& getStreamUrl() const { return stream_url; }
    const std::string& getDuration() const { return duration; }
+   const std::string& getThumbnail() const { return thumbnail; }
    static const std::string& getBeginUrl() { return BEGIN_URL; }
 
    std::string getInfo();

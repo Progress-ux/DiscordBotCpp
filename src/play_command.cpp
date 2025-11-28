@@ -32,17 +32,30 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
       auto val = event.get_parameter("url");
       std::string val_url = std::get<std::string>(val);
 
-      if(!musicHandler.isValidUrl(val_url))
+      musicHandler.addTrack(val_url);
+
+      if(musicHandler.isQueueEmpty())
       {
-         event.edit_response("Error: Incorrect link!");
+         event.edit_response("Error: Queue empty!");
          return;
-      }
+      }  
 
-      std::string response = musicHandler.addTrack(val_url);
-      
-      event.edit_response(response);
+      Track track = musicHandler.getLastTrack();
 
+      std::string duration = musicHandler.formatDuration(track.getDuration());
+
+      dpp::embed embed = dpp::embed()
+         .set_color(0x5865F2)
+         .set_title(track.getTitle())
+         .set_url(track.getUrl())
+         .add_field("Author", track.getAuthor(), true)
+         .add_field("Duration", duration, true)
+         .add_field("Added", "<@" + std::to_string(event.command.usr.id) + '>', false);
+
+      if(!track.getThumbnail().empty())
+         embed.set_thumbnail(track.getThumbnail());
       
+      event.edit_response(embed);
 
       if (!musicHandler.voiceclient || musicHandler.voiceclient->is_playing())
          return;

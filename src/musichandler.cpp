@@ -5,36 +5,25 @@
 #include <iostream>
 #include <regex>
 #include <dpp/utility.h>
+#include <cmath>
 
-std::string MusicHandler::addTrack(std::string& url)
+void MusicHandler::addTrack(std::string& url)
 {
    try
    {
       if(!isValidUrl(url))
-         throw "Invalid link entered!";
+         throw std::runtime_error("Invalid link entered!");
 
       Track track = extractInfo(url);
       
       if(track.empty())
-         throw "Failed to retrieve information!";
+         throw std::runtime_error("Failed to retrieve information!");
 
       queue.push_back(track);
-
-      std::string duration = track.getDuration(); // in seconds
-      int minutes = std::stoi(duration) / 60;
-      int seconds = std::stoi(duration) % 60;
-
-      std::string response = 
-         "**Title:** " + track.getTitle() + "\n" +
-         "**Artist:** " + track.getAuthor() + "\n" +
-         "**Duration:** " + std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds) + "\n" +
-         "**Queue Position:** " + std::to_string(queueSize());
-
-      return response;
    }
    catch(const std::exception& e)
    {
-      throw e.what();
+      throw std::runtime_error(e.what());
    }
 }
 
@@ -108,6 +97,46 @@ Track &MusicHandler::getBackTrack()
    current_track = history.back();
    history.pop_back();
    return current_track;
+}
+
+std::string MusicHandler::formatDuration(const std::string& sec_str)
+{
+   long long sec;
+
+   // Trying to convert the input string to a number
+   try {
+      sec = std::stoll(sec_str);
+   } catch (const std::invalid_argument& e) {
+      // If the string does not contain a number, return a dash
+      return "—";
+   } catch (const std::out_of_range& e) {
+      // If the number is too big for long long
+      return "—";
+   }
+
+   if (sec <= 0) {
+      return "—";
+   }
+
+   const long long h = std::floor(sec / 3600);
+   const long long m = std::floor((sec % 3600) / 60);
+   const long long s = sec % 60;
+
+   // Use stringstream for zero padding formatting
+   std::stringstream ss;
+   
+   if (h > 0) {
+      ss << h << ":";
+      // std::setw(2) sets the field width to 2 characters
+      // std::setfill('0') fills the empty space with zeros
+      ss << std::setw(2) << std::setfill('0') << m << ":";
+      ss << std::setw(2) << std::setfill('0') << s;
+   } else {
+      ss << m << ":";
+      ss << std::setw(2) << std::setfill('0') << s;
+   }
+
+   return ss.str();
 }
 
 bool MusicHandler::isValidUrl(std::string &url)
@@ -207,7 +236,7 @@ Track MusicHandler::extractInfo(std::string &url)
    
       FILE* yt_dlp = popen(yt_dlp_cmd.c_str(), "r");
       if(!yt_dlp)
-         throw "Cannot run yt-dlp";
+         throw std::runtime_error("Cannot run yt-dlp");
    
       std::string json_data;
       char buffer[1024];
@@ -219,7 +248,7 @@ Track MusicHandler::extractInfo(std::string &url)
       nlohmann::json result = nlohmann::json::parse(json_data);
    
       if (result.empty())
-         throw "Error: json empty";
+         throw std::runtime_error("Error: json empty");
    
       // Stores track information
       track.setTitle(result["title"]);
@@ -227,11 +256,13 @@ Track MusicHandler::extractInfo(std::string &url)
       track.setUrl(track.getBeginUrl() + (std::string)result["id"]);
       track.setDuration(std::to_string(result.value("duration", 0)));
       track.setStreamUrl(result["url"]);
+      track.setThumbnail(result["thumbnail"]); 
       return track;
+
    }
    catch(const std::exception& e)
    {
-      throw e.what();
+      throw std::runtime_error(e.what());
    }
    
 }
