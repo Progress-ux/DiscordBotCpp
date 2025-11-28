@@ -6,14 +6,12 @@ StopCommand::StopCommand(Bot &b) : bot(b) {}
 void StopCommand::execute(const dpp::slashcommand_t &event)
 {
    auto& musicHandler = bot.getMusicHandler(event.command.guild_id);
-   if(musicHandler.getVoiceClient())
+   if(musicHandler.voiceclient)
    { 
       musicHandler.setStopFlag(true);
-      // musicHandler.getVoiceClient()->stop_audio();
+      musicHandler.voiceclient->stop_audio();
+      event.reply("Audio stopped");
    }
    else
-   {
-      std::cout << "Недоступен v" << std::endl;
-   }
-   event.reply("Audio stopped");
+      event.reply("Nothing plays!");
 }

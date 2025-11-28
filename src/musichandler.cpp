@@ -67,11 +67,7 @@ size_t MusicHandler::historySize()
 Track& MusicHandler::getCurrentTrack() 
 {
    if(current_track.empty())
-   {
-      current_track = queue.front();
-      queue.pop_front();
-   }
-
+      current_track = this->getNextTrack();
    return current_track;
 }
 
@@ -82,6 +78,16 @@ Track& MusicHandler::getLastTrack()
 
 Track& MusicHandler::getNextTrack() 
 {
+   if(isQueueEmpty())
+   {
+      current_track = Track();
+      return current_track;
+   }
+
+   // Move the current track to history before updating
+   if(!current_track.empty())
+      history.push_back(current_track);
+
    current_track = queue.front();
    queue.pop_front();
    return current_track;
@@ -89,8 +95,18 @@ Track& MusicHandler::getNextTrack()
 
 Track &MusicHandler::getBackTrack()
 {
-   current_track = history.front();
-   history.pop_front();
+   if(isHistoryEmpty())
+   {
+      current_track = Track();
+      return current_track;
+   }
+
+   // Move the current track back to the front of the queue
+   if(!current_track.empty())
+      queue.push_front(current_track);
+
+   current_track = history.back();
+   history.pop_back();
    return current_track;
 }
 
@@ -226,37 +242,28 @@ void MusicHandler::Player()
    {
       try
       {
-         if(!voice_client.lock() || isStopFlag())
+         if(!voiceclient || isStopFlag())
             break;
-
-         playTrack(getCurrentTrack().getStreamUrl());
-
-         if(isBackFlag())
+            
+         if(back_flag.load())
          {
             setBackFlag(false);
-            updateWorkingStreamLink(getBackTrack());
 
-            // The current track is added to the queue
-            queue.push_front(current_track);
-         }
-         else if (isSkipFlag())
-         {
-            setSkipFlag(false);
-            updateWorkingStreamLink(getNextTrack());
+            if(isHistoryEmpty())
+               break;
             
-            // The current track is added to the beginning of the story
-            history.push_front(current_track);
+            updateWorkingStreamLink(getBackTrack());
          }
          else 
          {
+            skip_flag.store(false);
+
             if(isQueueEmpty())
                break;
-               
-            updateWorkingStreamLink(getNextTrack());
             
-            // The current track is added to the beginning of the story
-            history.push_front(current_track);
+            updateWorkingStreamLink(getNextTrack());
          }
+         playTrack(getCurrentTrack().getStreamUrl());
       }
       catch(const std::exception& e)
       {
@@ -269,6 +276,9 @@ void MusicHandler::Player()
 
 void MusicHandler::playTrack(std::string stream_url)
 {
+   if(stream_url.empty())
+      return;
+
    FILE* ffmpeg = popen(
       ("ffmpeg"  
          " -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 2" 
@@ -288,8 +298,8 @@ void MusicHandler::playTrack(std::string stream_url)
    std::vector<uint8_t> buf(11520);
    while (!isStopFlag()) 
    {
-      // while (v /* && pause_flag*/) // TODO: Add flags or structure
-      //    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      while (voiceclient && voiceclient->is_paused())
+         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
       size_t bytes_read = fread(buf.data(), 1, buf.size(), ffmpeg);
       if (bytes_read == 0) 
@@ -309,20 +319,17 @@ void MusicHandler::playTrack(std::string stream_url)
       if(isSkipFlag() || isBackFlag()) break;
       if(isStopFlag() || isDisconnectFlag()) break;
       
-      if(auto vc = voice_client.lock())
-      {
-         if(vc->is_connected() && !vc->terminating)
-            vc->send_audio_raw(reinterpret_cast<uint16_t*>(buf.data()), buf.size());
-         else 
-            break;
-      } 
+      if(voiceclient && voiceclient->is_connected())
+         voiceclient->send_audio_raw(reinterpret_cast<uint16_t*>(buf.data()), buf.size());
       else 
       {
          if(i >= 5)
+         {
+            voiceclient = nullptr;
             break;
+         }
          ++i;
-         std::cerr << "Voice client destroyed from " << guild_id << ", cannot send audio. Attempt: " << i << "\n"; 
-         std::this_thread::sleep_for(std::chrono::seconds(1));
+         std::this_thread::sleep_for(std::chrono::milliseconds(100));
          continue; 
       }
    }

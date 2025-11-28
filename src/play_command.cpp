@@ -13,9 +13,17 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
    {
       auto& musicHandler = bot.getMusicHandler(event.command.guild_id);
       
-      dpp::voiceconn *v = event.from()->get_voice(event.command.guild_id);
+      if(!musicHandler.voiceclient)
+      {
+         dpp::voiceconn *v = event.from()->get_voice(event.command.guild_id);
+         if(v && v->voiceclient)
+         {
+            std::shared_ptr<dpp::discord_voice_client> vc_shared = std::shared_ptr<dpp::discord_voice_client>(std::move(v->voiceclient));
+            musicHandler.setVoiceClient(vc_shared);
+         }
+      }
       
-      if (!v) 
+      if (!musicHandler.voiceclient) 
       {
          event.edit_response("Error: I'm not in the voice channel!");
          return;
@@ -30,23 +38,14 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
          return;
       }
 
-      if(!musicHandler.getVoiceClient())
-      {
-         std::cout << "Created voice_client" << std::endl;
-         std::shared_ptr<dpp::discord_voice_client> vc_shared = std::move(v->voiceclient);
-         musicHandler.setVoiceClient(vc_shared);
-         std::cout << musicHandler.getVoiceClient() << std::endl;
-      }
-      
       std::string response = musicHandler.addTrack(val_url);
       
       event.edit_response(response);
+
       
-      if (!musicHandler.getVoiceClient() || musicHandler.getVoiceClient()->is_playing())
-      {
-         std::cout << "!getVoice || is_playing" << std::endl;
+
+      if (!musicHandler.voiceclient || musicHandler.voiceclient->is_playing())
          return;
-      }
 
       musicHandler.Player();
    } 

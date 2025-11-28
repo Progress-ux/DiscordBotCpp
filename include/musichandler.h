@@ -19,8 +19,6 @@
 class MusicHandler
 {
 private:
-   std::weak_ptr<dpp::discord_voice_client> voice_client;
-
    dpp::snowflake guild_id;                   ///< Current server for the player
 
    Track current_track;                       ///< Current playing track.
@@ -45,20 +43,20 @@ private:
    void playTrack(std::string stream_url);
    
 public:
+   std::shared_ptr<dpp::discord_voice_client> voiceclient;
    /**
     * @brief The constructor that accepts for writing the server with which it works 
     * 
     * @param _bot Pointer to bot for permanent access to voiceconn
     * @param _guild_id ID of the server to which it will be linked
     */
-   MusicHandler(dpp::snowflake _guild_id) : guild_id(_guild_id) {  }
+   MusicHandler(dpp::snowflake _guild_id) : guild_id(_guild_id) { voiceclient = nullptr; }
 
    /**
     * @brief Adds a new track to the queue.
     *
     * @param url Video link.
-    * 
-    * Извлекает название, 
+    * @return response: title, uploader, duration(formatted), queue position  
     */
    std::string addTrack(std::string &url);
 
@@ -120,9 +118,7 @@ public:
     */
    Track& getBackTrack();
 
-   void setVoiceClient(std::shared_ptr <dpp::discord_voice_client> _voice_client) { voice_client = _voice_client; }
-
-   std::shared_ptr<dpp::discord_voice_client> getVoiceClient() { return voice_client.lock(); } 
+   void setVoiceClient(std::shared_ptr <dpp::discord_voice_client> _voice_client) { voiceclient = _voice_client; }
 
    /// Setting and receiving the stop flag.
    void setStopFlag(bool s) noexcept { stop_flag.store(s); }
