@@ -7,6 +7,7 @@
 #include "resume_command.h"
 #include "skip_command.h"
 #include "back_command.h"
+#include "leave_command.h"
 #include <memory>
 
 int main(int argc, char const *argv[])
@@ -16,6 +17,7 @@ int main(int argc, char const *argv[])
     bot.add_command(std::make_shared<PingCommand>());
     
     bot.add_command(std::make_shared<JoinCommand>());
+    bot.add_command(std::make_shared<LeaveCommand>(bot));
     
     bot.add_command(std::make_shared<StopCommand>(bot));
     
