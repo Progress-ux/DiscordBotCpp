@@ -21,6 +21,8 @@ class MusicHandler
 private:
    dpp::snowflake guild_id;                   ///< Current server for the player
 
+   std::mutex mutex;
+
    Track current_track;                       ///< Current playing track.
    
    std::deque<Track> queue;                   ///< Queue of tracks for playback.

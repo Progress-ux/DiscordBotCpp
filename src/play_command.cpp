@@ -42,14 +42,12 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
       // replaced response with embed
       Track track = musicHandler.getLastTrack();
 
-      std::string duration = musicHandler.formatDuration(track.getDuration());
-
       dpp::embed embed = dpp::embed()
          .set_color(0x5865F2)
          .set_title(track.getTitle())
          .set_url(track.getUrl())
          .add_field("Author", track.getAuthor(), true)
-         .add_field("Duration", duration, true)
+         .add_field("Duration", track.getDuration(), true)
          .add_field("Added", "<@" + std::to_string(event.command.usr.id) + '>', false);
 
       if(!track.getThumbnail().empty())

@@ -11,6 +11,8 @@ void MusicHandler::addTrack(std::string& url)
 {
    try
    {
+      std::lock_guard<std::mutex> guard (mutex);
+
       if(!isValidUrl(url))
          throw std::runtime_error("Invalid link entered!");
 
@@ -254,7 +256,7 @@ Track MusicHandler::extractInfo(std::string &url)
       track.setTitle(result["title"]);
       track.setAuthor(result["uploader"]);
       track.setUrl(track.getBeginUrl() + (std::string)result["id"]);
-      track.setDuration(std::to_string(result.value("duration", 0)));
+      track.setDuration(formatDuration(std::to_string(result.value("duration", 0))));
       track.setStreamUrl(result["url"]);
       track.setThumbnail(result["thumbnail"]); 
       return track;
