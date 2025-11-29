@@ -39,7 +39,7 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
          event.edit_response("Error: Queue empty!");
          return;
       }  
-
+      // replaced response with embed
       Track track = musicHandler.getLastTrack();
 
       std::string duration = musicHandler.formatDuration(track.getDuration());

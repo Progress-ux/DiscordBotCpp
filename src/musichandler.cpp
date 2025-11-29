@@ -327,7 +327,7 @@ void MusicHandler::playTrack(std::string stream_url)
 
    u_int i = 0;
    std::vector<uint8_t> buf(11520);
-   while (!isStopFlag()) 
+   while (!stop_flag.load()) 
    {
       while (voiceclient && voiceclient->is_paused())
          std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -347,8 +347,8 @@ void MusicHandler::playTrack(std::string stream_url)
       if (bytes_read < buf.size())
          std::fill(buf.begin() + bytes_read, buf.end(), 0);
 
-      if(isSkipFlag() || isBackFlag()) break;
-      if(isStopFlag() || isDisconnectFlag()) break;
+      if(skip_flag.load() || back_flag.load()) break;
+      if(stop_flag.load() || disconnect_flag.load()) break;
       
       if(voiceclient && voiceclient->is_connected())
          voiceclient->send_audio_raw(reinterpret_cast<uint16_t*>(buf.data()), buf.size());
@@ -364,6 +364,9 @@ void MusicHandler::playTrack(std::string stream_url)
          continue; 
       }
    }
+
+   if(voiceclient)
+      voiceclient->stop_audio();
    pclose(ffmpeg);
 }
 
