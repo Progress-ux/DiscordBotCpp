@@ -1,4 +1,4 @@
-#include "stop_command.h"
+#include "stop_command.hpp"
 #include <dpp/discordvoiceclient.h>
 
 StopCommand::StopCommand(Bot &b) : bot(b) {}

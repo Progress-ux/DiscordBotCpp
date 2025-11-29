@@ -1,4 +1,4 @@
-#include "bot.h"
+#include "bot.hpp"
 #include <fstream>
 #include <dpp/intents.h>
 

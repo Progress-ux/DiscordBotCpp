@@ -1,13 +1,13 @@
-#include "bot.h"
-#include "ping_command.h"
-#include "join_command.h"
-#include "play_command.h"
-#include "stop_command.h"
-#include "pause_command.h"
-#include "resume_command.h"
-#include "skip_command.h"
-#include "back_command.h"
-#include "leave_command.h"
+#include "bot.hpp"
+#include "ping_command.hpp"
+#include "join_command.hpp"
+#include "play_command.hpp"
+#include "stop_command.hpp"
+#include "pause_command.hpp"
+#include "resume_command.hpp"
+#include "skip_command.hpp"
+#include "back_command.hpp"
+#include "leave_command.hpp"
 #include <memory>
 
 int main(int argc, char const *argv[])

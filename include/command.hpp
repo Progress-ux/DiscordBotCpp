@@ -12,4 +12,4 @@ public:
    virtual std::string description() const = 0;
 
    virtual void execute(const dpp::slashcommand_t& event) = 0;
-};
+};                   

@@ -1,5 +1,5 @@
 #pragma once
-#include "command.h"
+#include "command.hpp"
 
 class JoinCommand : public Command 
 {

@@ -1,4 +1,4 @@
-#include "join_command.h"
+#include "join_command.hpp"
 
 void JoinCommand::execute(const dpp::slashcommand_t& event)
 {

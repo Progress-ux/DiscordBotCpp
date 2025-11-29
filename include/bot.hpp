@@ -4,8 +4,8 @@
 #include <vector>
 #include <memory>
 #include <dpp/dpp.h>
-#include "command.h"
-#include "musichandler.h"
+#include "command.hpp"
+#include "musichandler.hpp"
 
 class Bot
 {

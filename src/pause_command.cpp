@@ -1,4 +1,4 @@
-#include "pause_command.h"
+#include "pause_command.hpp"
 
 void PauseCommand::execute(const dpp::slashcommand_t &event)
 {

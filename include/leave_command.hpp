@@ -1,6 +1,6 @@
 #pragma once
-#include "command.h"
-#include "bot.h"
+#include "command.hpp"
+#include "bot.hpp"
 
 class LeaveCommand : public Command 
 {

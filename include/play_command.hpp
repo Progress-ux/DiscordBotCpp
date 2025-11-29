@@ -1,8 +1,8 @@
 #pragma once
 
-#include "command.h"
-#include "bot.h"
-#include "track.h"
+#include "command.hpp"
+#include "bot.hpp"
+#include "track.hpp"
 
 class PlayCommand : public Command
 {

@@ -1,4 +1,4 @@
-#include "skip_command.h"
+#include "skip_command.hpp"
 
 SkipCommand::SkipCommand(Bot& b) : bot(b) {}
 

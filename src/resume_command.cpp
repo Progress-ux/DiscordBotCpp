@@ -1,4 +1,4 @@
-#include "resume_command.h"
+#include "resume_command.hpp"
 
 void ResumeCommand::execute(const dpp::slashcommand_t &event)
 {
