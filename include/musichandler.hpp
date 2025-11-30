@@ -120,6 +120,9 @@ public:
     */
    Track& getBackTrack();
 
+   std::deque<Track>& getHistory() { return history; }
+   std::deque<Track>& getQueue() { return queue; }
+
    void setVoiceClient(std::shared_ptr <dpp::discord_voice_client> _voice_client) { voiceclient = _voice_client; }
 
    /// Setting and receiving the stop flag.

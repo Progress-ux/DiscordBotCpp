@@ -8,6 +8,8 @@
 #include "skip_command.hpp"
 #include "back_command.hpp"
 #include "leave_command.hpp"
+#include "queue_command.hpp"
+#include "history_command.hpp"
 #include <memory>
 
 int main(int argc, char const *argv[])
@@ -20,6 +22,9 @@ int main(int argc, char const *argv[])
     bot.add_command(std::make_shared<LeaveCommand>(bot));
     
     bot.add_command(std::make_shared<StopCommand>(bot));
+
+    bot.add_command(std::make_shared<QueueCommand>(bot));
+    bot.add_command(std::make_shared<HistoryCommand>(bot));
     
     bot.add_command(std::make_shared<PauseCommand>());
     bot.add_command(std::make_shared<ResumeCommand>());
