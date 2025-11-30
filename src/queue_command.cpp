@@ -20,7 +20,7 @@ void QueueCommand::execute(const dpp::slashcommand_t &event)
 
       for (size_t i = 0; i < musicHandler.queueSize() && i < 10; i++)
       {
-         desc += (i + 1) + ". " + musicHandler.getQueue()[i].getTitle() + " - " + musicHandler.getQueue()[i].getDuration() + "\n";
+         desc += std::to_string(i+1) + ". " + musicHandler.getQueue()[i].getTitle() + " - " + musicHandler.getQueue()[i].getDuration() + "\n";
       }
 
       if(musicHandler.queueSize() > 10)
