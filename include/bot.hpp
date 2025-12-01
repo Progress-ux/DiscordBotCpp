@@ -16,13 +16,13 @@ private:
 
    std::map<dpp::snowflake, std::unique_ptr<MusicHandler>> music_handlers;
 
-   std::map<std::string, std::string> load_env(const std::string& env_file = "../.env");
+   std::map<std::string, std::string> load_env(const std::string& env_file = "/home/container/.env");
    std::string getToken();
    void register_events();
    void register_commands();
    
 public:
-   Bot(const std::string& env_file = "../.env");
+   Bot(const std::string& env_file = "/home/container/.env");
    void run();
    void add_command(std::shared_ptr<Command> cmd);
 

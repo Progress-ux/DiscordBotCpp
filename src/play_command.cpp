@@ -55,10 +55,8 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
       
       event.edit_response(embed);
 
-      if (!musicHandler.voiceclient || musicHandler.voiceclient->is_playing())
-         return;
-
-      musicHandler.Player();
+      if (musicHandler.voiceclient && !musicHandler.voiceclient->is_playing())
+         musicHandler.startPlayer();
    } 
    catch (const std::exception& e) 
    {

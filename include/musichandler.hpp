@@ -21,7 +21,8 @@ class MusicHandler
 private:
    dpp::snowflake guild_id;                   ///< Current server for the player
 
-   std::mutex mutex;
+   std::mutex command_mutex;
+   std::mutex player_mutex;
 
    Track current_track;                       ///< Current playing track.
    
@@ -32,6 +33,7 @@ private:
    std::atomic<bool> skip_flag;               ///< Flag for skipping the current track.
    std::atomic<bool> back_flag;               ///< Flag for moving to the previous track.
    std::atomic<bool> disconnect_flag;         ///< Completion flag when the bot is disconnected.
+   std::atomic<bool> is_playing;              ///< Flag is playing
    
    /**
     * @brief Plays the audio stream through FFmpeg and sends PCM data to the voice channel.
@@ -43,6 +45,16 @@ private:
     * @param v DPP voice connection.
     */
    void playTrack(std::string stream_url);
+
+   /**
+    * @brief Main playback loop.
+    *
+    * Plays tracks one by one, processing control flags
+    * (Stop, Skip, Back, Disconnect). Switches tracks and updates their working links.
+    *
+    * @param v DPP voice connection.
+    */
+   void Player();
    
 public:
    std::shared_ptr<dpp::discord_voice_client> voiceclient;
@@ -53,6 +65,8 @@ public:
     * @param _guild_id ID of the server to which it will be linked
     */
    MusicHandler(dpp::snowflake _guild_id) : guild_id(_guild_id) { voiceclient = nullptr; }
+
+   void startPlayer();
 
    /**
     * @brief Adds a new track to the queue.
@@ -141,15 +155,7 @@ public:
    void setDisconnectFlag(bool s) noexcept { disconnect_flag.store(s); }
    bool isDisconnectFlag() const noexcept { return disconnect_flag.load(); }
 
-   /**
-    * @brief Main playback loop.
-    *
-    * Plays tracks one by one, processing control flags
-    * (Stop, Skip, Back, Disconnect). Switches tracks and updates their working links.
-    *
-    * @param v DPP voice connection.
-    */
-   void Player();
+   
 
    /**
     * @brief Checks if the history is empty.

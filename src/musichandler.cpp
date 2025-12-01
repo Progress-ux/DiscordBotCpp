@@ -7,11 +7,19 @@
 #include <dpp/utility.h>
 #include <cmath>
 
-void MusicHandler::addTrack(std::string& url)
+void MusicHandler::startPlayer()
+{
+   std::lock_guard<std::mutex> lock(player_mutex);
+   if (is_playing.load()) return; 
+   is_playing.store(true);
+   std::thread(&MusicHandler::Player, this).detach();
+}
+
+void MusicHandler::addTrack(std::string &url)
 {
    try
    {
-      std::lock_guard<std::mutex> guard (mutex);
+      std::lock_guard<std::mutex> guard (command_mutex);
 
       if(!isValidUrl(url))
          throw std::runtime_error("Invalid link entered!");
@@ -31,11 +39,13 @@ void MusicHandler::addTrack(std::string& url)
 
 bool MusicHandler::isHistoryEmpty()
 {
+   std::lock_guard<std::mutex> lock(command_mutex);
    return history.empty();
 }
 
 bool MusicHandler::isQueueEmpty()
 {
+   std::lock_guard<std::mutex> lock(command_mutex);
    return queue.empty();
 }
 
@@ -180,11 +190,15 @@ void MusicHandler::updateInfo(Track &track)
 {
    try
    {
+      // std::string path_from_cookies = "/home/container/cookies.txt";      
       std::string yt_dlp_cmd =
-               "yt-dlp "
-               "-f bestaudio "
+               "/home/container/.local/bin/yt-dlp "
+               "-f bestaudio/best "
                "--dump-single-json "
                "--no-playlist "
+               "--quiet "
+               "--no-warnings "
+               "--extractor-args \"youtube:player_client=default\" "
                "--add-header \"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36\" "
                "--add-header \"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\" "
                "--add-header \"Accept-Language: en-us,en;q=0.5\" "
@@ -225,11 +239,15 @@ Track MusicHandler::extractInfo(std::string &url)
    Track track;
    try
    {
+      // std::string path_from_cookies = "/home/container/cookies.txt";      
       std::string yt_dlp_cmd =
-               "yt-dlp "
-               "-f bestaudio "
+               "/home/container/.local/bin/yt-dlp "
+               "-f bestaudio/best "
                "--dump-single-json "
                "--no-playlist "
+               "--quiet "
+               "--no-warnings "
+               "--extractor-args \"youtube:player_client=default\" "
                "--add-header \"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36\" "
                "--add-header \"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\" "
                "--add-header \"Accept-Language: en-us,en;q=0.5\" "
@@ -246,11 +264,14 @@ Track MusicHandler::extractInfo(std::string &url)
          json_data += buffer;
       }
       pclose(yt_dlp);
+
+      if (json_data.empty())
+         throw std::runtime_error("yt-dlp returned empty output");
    
       nlohmann::json result = nlohmann::json::parse(json_data);
    
       if (result.empty())
-         throw std::runtime_error("Error: json empty");
+         throw std::runtime_error("json empty");
    
       // Stores track information
       track.setTitle(result["title"]);
@@ -260,7 +281,6 @@ Track MusicHandler::extractInfo(std::string &url)
       track.setStreamUrl(result["url"]);
       track.setThumbnail(result["thumbnail"]); 
       return track;
-
    }
    catch(const std::exception& e)
    {
@@ -268,6 +288,8 @@ Track MusicHandler::extractInfo(std::string &url)
    }
    
 }
+
+
 
 void MusicHandler::Player()
 {
@@ -280,7 +302,7 @@ void MusicHandler::Player()
             
          if(back_flag.load())
          {
-            setBackFlag(false);
+            back_flag.store(false);
 
             if(isHistoryEmpty())
                break;
@@ -304,6 +326,7 @@ void MusicHandler::Player()
          break;
       }
    }
+   is_playing.store(false);
    setStopFlag(false);
 }
 

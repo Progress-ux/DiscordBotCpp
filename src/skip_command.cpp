@@ -20,9 +20,10 @@ void SkipCommand::execute(const dpp::slashcommand_t &event)
    }
    
    musicHandler.setSkipFlag(true);
+   musicHandler.voiceclient->stop_audio();
    event.edit_response("Audio skiped!");
 
    if (musicHandler.voiceclient && !musicHandler.voiceclient->is_playing()) 
-      musicHandler.Player();
+      musicHandler.startPlayer();
 
 }

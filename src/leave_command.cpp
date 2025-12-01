@@ -13,12 +13,6 @@ void LeaveCommand::execute(const dpp::slashcommand_t &event)
       return;
    }
    
-   if(!v->is_active())
-   {
-      event.edit_response("The bot has not finished connecting!");
-      return;
-   }
-
    if(musicHandler.voiceclient && musicHandler.voiceclient->is_playing())
    {
       musicHandler.voiceclient->stop_audio();

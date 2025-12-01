@@ -19,9 +19,12 @@ void BackCommand::execute(const dpp::slashcommand_t &event)
       return;
    }
 
+   musicHandler.voiceclient->stop_audio();
    musicHandler.setBackFlag(true);
+
    event.edit_response("Returning to the previous track!");
 
    if (musicHandler.voiceclient && !musicHandler.voiceclient->is_playing())
-      musicHandler.Player();
+      musicHandler.startPlayer();
+
 }
