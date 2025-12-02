@@ -21,8 +21,8 @@ class MusicHandler
 private:
    dpp::snowflake guild_id;                   ///< Current server for the player
 
-   std::mutex command_mutex;
-   std::mutex player_mutex;
+   std::mutex command_mutex;                  ///< Command Queue Order 
+   std::mutex player_mutex;                   ///< Playback order
 
    Track current_track;                       ///< Current playing track.
    
@@ -66,7 +66,28 @@ public:
     */
    MusicHandler(dpp::snowflake _guild_id) : guild_id(_guild_id) { voiceclient = nullptr; }
 
+   /**
+    * Blocks the thread
+    * If the track is playing, it exits
+    * If not, then sets the is_playing flag to true and starts a new thread
+    */
    void startPlayer();
+
+   /**
+    * @brief Returns the track by index
+    * 
+    * @param index track number in queue
+    * @return link to track from queue
+    */
+   Track& getTrackFromHistory(size_t index);
+
+   /**
+    * @brief Returns the track by index
+    * 
+    * @param index track number in queue
+    * @return link to track from queue
+    */
+   Track& getTrackFromQueue(size_t index);
 
    /**
     * @brief Adds a new track to the queue.

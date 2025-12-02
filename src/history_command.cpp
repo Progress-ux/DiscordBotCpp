@@ -5,29 +5,34 @@ void HistoryCommand::execute(const dpp::slashcommand_t &event)
    event.thinking();
    auto &musicHandler = bot.getMusicHandler(event.command.guild_id);
 
+   if(musicHandler.isHistoryEmpty())
+   {
+      event.edit_response("The story is empty");
+      return;
+   }
+
    dpp::embed embed;
 
-   embed.set_title("История треков")
+   embed.set_title("Track history")
       .set_color(0x5865F2);
 
-   if(musicHandler.isHistoryEmpty())
-      embed.set_description("История пуста");
-   else 
+
+   try 
    {
-      std::string desc;
-
-      size_t count = musicHandler.historySize();
-      size_t start = (count > 10 ? count - 10 : 0);
-
-      for (size_t i = count; i-- > start;)
+      for(size_t i = 0; i < musicHandler.historySize(); i++)
       {
-         desc += std::to_string(i) + ". " + musicHandler.getHistory()[i].getTitle() + " - " + musicHandler.getHistory()[i].getDuration() + "\n";
+         embed.add_field(std::to_string(i+1) + ". " + musicHandler.getTrackFromHistory(i).getTitle(), 
+                         musicHandler.getTrackFromHistory(i).getUrl(), 
+                         false
+         );
+         if(i >= 5)
+            break;
       }
-
-      if(count > 10)
-         desc += "В истории еще " + std::to_string(count - 10) + " трек/ов";
-      embed.set_description(desc);
+      event.edit_response(embed);
+   }
+   catch (std::exception& e)
+   {
+      event.edit_response(std::string("Error: ") + e.what());
    }
    
-   event.edit_response(embed);
 }

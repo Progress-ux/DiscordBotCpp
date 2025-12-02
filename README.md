@@ -1,4 +1,3 @@
-{"id":"56789","variant":"standard","title":"Updated README for DiscordBotCpp"}
 # DiscordBotCpp
 
 ## Клонирование репозитория
