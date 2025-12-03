@@ -62,9 +62,6 @@ void Bot::register_events()
          register_commands();
       }
    });
-   bot->on_voice_ready([this](const dpp::voice_ready_t& event) {
-      std::cout << "Ready" << std::endl;
-   });
 }
 
 void Bot::register_commands()

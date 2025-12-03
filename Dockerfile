@@ -11,4 +11,4 @@ RUN apt update && apt install -y \
     libopus-dev \
     libogg-dev 
 
-WORKDIR /project
+WORKDIR /home/container/
