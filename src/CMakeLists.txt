@@ -2,6 +2,7 @@ set(BOT_SOURCES
    bot/bot.cpp
    bot/musichandler.cpp
    bot/track.cpp
+   bot/utils.cpp
 
    bot/commands/skip_command.cpp
    bot/commands/back_command.cpp
