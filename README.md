@@ -44,8 +44,8 @@ cmake --build .
 
 Запуск:
 ```bash
-./main        # Linux
-main.exe      # Windows
+./src/main        # Linux
+src/main.exe      # Windows
 ```
 
 ---
