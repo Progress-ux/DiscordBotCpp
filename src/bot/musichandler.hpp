@@ -51,8 +51,6 @@ private:
     *
     * Plays tracks one by one, processing control flags
     * (Stop, Skip, Back, Disconnect). Switches tracks and updates their working links.
-    *
-    * @param v DPP voice connection.
     */
    void Player();
    

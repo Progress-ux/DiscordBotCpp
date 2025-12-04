@@ -11,7 +11,7 @@ Bot::Bot(const std::string& env_file) {
       std::exit(EXIT_FAILURE);
    }
 
-   bot = std::make_unique<dpp::cluster>(token, dpp::i_default_intents | dpp::i_guild_voice_states);
+   bot = std::make_unique<dpp::cluster>(token, dpp::i_default_intents | dpp::i_guild_voice_states | dpp::i_guilds);
    
    register_events();
 }
@@ -57,6 +57,20 @@ void Bot::register_events()
       }
    });
    bot->on_ready([this](const dpp::ready_t& event) {
+      bot->current_user_get_guilds([this](const dpp::confirmation_callback_t& event) {
+         if(event.is_error())
+         {
+            std::cerr << "Error: " << event.get_error().message << "\n";
+            return;
+         }
+
+         auto guilds = std::get<dpp::guild_map>(event.value);
+
+         for (auto& [id, guild] : guilds) {
+            std::cout << "Guild: " << guild.name << " | ID: " << id << "\n";
+         }
+      });
+
       if(dpp::run_once<struct register_bot_commands>()) {
          std::cout << "Bot ready!" << std::endl;
          register_commands();

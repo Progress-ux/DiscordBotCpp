@@ -129,14 +129,14 @@ Track &MusicHandler::getBackTrack()
 
 void MusicHandler::Player()
 {
-   while(true)
+   while(!stop_flag)
    {
       try
       {
-         if(!voiceclient || isStopFlag())
+         if(!voiceclient)
             break;
             
-         if(back_flag.load())
+         if(back_flag)
          {
             back_flag.store(false);
 
@@ -154,7 +154,9 @@ void MusicHandler::Player()
             
             Utils::updateWorkingStreamLink(getNextTrack());
          }
-         playTrack(getCurrentTrack().getStreamUrl());
+         if(voiceclient)
+            playTrack(getCurrentTrack().getStreamUrl());
+
       }
       catch(const std::exception& e)
       {
@@ -231,4 +233,3 @@ void MusicHandler::playTrack(std::string stream_url)
    if(voiceclient)
       voiceclient->stop_audio();
 }
-
