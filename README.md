@@ -59,7 +59,7 @@ docker run -d \
   --cpus="2" \
   --memory="1.5g" \
   --memory-swap="1.5g" \
-  --storage-opt size=5G \
+  --storage-opt size=20G \
   mybot:latest
 ```
 
