@@ -43,6 +43,17 @@ namespace Utils
     * Receives JSON metadata, parses it and generates a Track object:
     * title, author, duration, URL and working stream link.
     *
+    * @param query video title.
+    * @return The populated Track structure.
+    */
+   Track extractInfoByName(std::string &query);
+
+   /**
+    * @brief Retrieves track information via yt-dlp.
+    *
+    * Receives JSON metadata, parses it and generates a Track object:
+    * title, author, duration, URL and working stream link.
+    *
     * @param url Source URL of the track.
     * @return The populated Track structure.
     */

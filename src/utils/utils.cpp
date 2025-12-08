@@ -37,7 +37,7 @@ void Utils::updateWorkingStreamLink(Track &track)
 
    if (res != CURLE_OK || response_code >= 400)
    {
-      LOG_DEBUG("Update stream link, response code: " + response_code);
+      LOG_DEBUG("Update stream link, response code: " + std::to_string(response_code));
       updateInfo(track);
    }
 }
@@ -47,7 +47,6 @@ void Utils::updateInfo(Track &track)
 {
    try
    {
-      // std::string path_from_cookies = "/home/container/cookies.txt";      
       std::string yt_dlp_cmd =
                "/home/container/.local/bin/yt-dlp "
                "-f bestaudio/best "
@@ -90,8 +89,71 @@ void Utils::updateInfo(Track &track)
    }
    catch(const std::exception& e)
    {
-      std::cerr << e.what() << '\n';
+      LOG_ERROR(e.what());
    }
+}
+
+Track Utils::extractInfoByName(std::string &query)
+{
+   Track track;
+   try
+   {
+      std::string yt_dlp_cmd =
+               "/home/container/.local/bin/yt-dlp "
+               "-f bestaudio/best "
+               "--dump-single-json "
+               "--no-playlist "
+               "--quiet "
+               "--no-warnings "
+               "--extractor-args \"youtube:player_client=default\" "
+               "--add-header \"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36\" "
+               "--add-header \"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\" "
+               "--add-header \"Accept-Language: en-us,en;q=0.5\" "
+               "--add-header \"Sec-Fetch-Mode: navigate\" "
+               "\"ytsearch1:" + query + "\" 2>/dev/null";
+
+      std::unique_ptr<FILE, decltype(&pclose)> yt_dlp(
+         popen(yt_dlp_cmd.c_str(), "r"),
+         pclose
+      );
+      if(!yt_dlp)
+         throw std::runtime_error("Cannot run yt-dlp");
+
+      std::string json_data;
+      char buffer[1024];
+      while (fgets(buffer, sizeof(buffer), yt_dlp.get())) {
+         json_data += buffer;
+      }
+
+      if (json_data.empty())
+         throw std::runtime_error("yt-dlp returned empty output");
+
+      nlohmann::json result = nlohmann::json::parse(json_data);
+
+      if (result.empty())
+         throw std::runtime_error("json empty");
+
+      auto entries = result.at("entries");
+      if (entries.empty())
+         throw std::runtime_error("No search results");
+
+      auto& video = entries.at(0);
+
+      // Stores track information
+      track.setTitle(video.value("title", ""));
+      track.setAuthor(video.value("uploader", ""));
+      std::string id = video.value("id", "");
+      if(!id.empty())
+         track.setUrl(track.getBeginUrl() + id);
+      track.setDuration(formatDuration(std::to_string(video.value("duration", 0))));
+      track.setStreamUrl(video.value("url", ""));
+      track.setThumbnail(video.value("thumbnail", ""));
+   }
+   catch(const std::exception& e)
+   {
+      LOG_ERROR(e.what());
+   }
+   return track;
 }
 
 Track Utils::extractInfo(std::string &url)
@@ -99,7 +161,6 @@ Track Utils::extractInfo(std::string &url)
    Track track;
    try
    {
-      // std::string path_from_cookies = "/home/container/cookies.txt";      
       std::string yt_dlp_cmd =
                "/home/container/.local/bin/yt-dlp "
                "-f bestaudio/best "

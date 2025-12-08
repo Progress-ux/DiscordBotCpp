@@ -39,7 +39,7 @@ Track &MusicHandler::getTrackFromQueue(size_t index)
    return queue.at(index);
 }
 
-void MusicHandler::addTrack(std::string &url)
+void MusicHandler::addTrackByLink(std::string &url)
 {
    try
    {
@@ -69,6 +69,32 @@ void MusicHandler::addTrack(std::string &url)
       throw;
    }
 }
+
+void MusicHandler::addTrackByQuery(std::string &query)
+{
+   try
+   {
+      std::lock_guard<std::mutex> guard (command_mutex);
+
+      LOG_DEBUG("Adding track from query");
+
+      Track track = Utils::extractInfoByName(query);
+      
+      if(track.empty())
+      {
+         LOG_ERROR("Track extraction failed");
+         throw std::runtime_error("Failed to retrieve information!");
+      }
+
+      queue.push_back(track);
+      LOG_DEBUG("Track added to queue");
+   }
+   catch(...)
+   {
+      throw;
+   }
+}
+
 
 bool MusicHandler::isHistoryEmpty()
 {

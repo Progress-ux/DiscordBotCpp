@@ -34,11 +34,13 @@ std::string Track::getInfo()
 {
    std::string info = author + "\n" +
                       title + "\n" +
-                      duration + "\n";
+                      duration + "\n" +
+                      url + "\n" +
+                      stream_url + "\n";
    return info;
 }
 
 bool Track::empty()
 {
-   return url.empty() && stream_url.empty();
+   return url.empty();
 }

@@ -30,11 +30,25 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
          event.edit_response("Error: I'm not in the voice channel!");
          return;
       }
-      
-      auto val = event.get_parameter("url");
-      std::string val_url = std::get<std::string>(val);
 
-      musicHandler.addTrack(val_url);
+      const auto& val_url = event.get_parameter("url");
+      const auto& val_search = event.get_parameter("search");
+
+      const std::string* url_ptr = std::get_if<std::string>(&val_url);
+      const std::string* search_ptr = std::get_if<std::string>(&val_search);
+
+      std::string url = (url_ptr != nullptr) ? *url_ptr : "";
+      std::string search = (search_ptr != nullptr) ? *search_ptr : "";
+
+      if(!url.empty())
+         musicHandler.addTrackByLink(url);
+      else if(!search.empty())
+         musicHandler.addTrackByQuery(search);
+      else
+      {
+         event.edit_response("Request is empty!");
+         return;
+      }
 
       if(musicHandler.isQueueEmpty())
       {
@@ -43,6 +57,13 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
       }  
       // replaced response with embed
       Track track = musicHandler.getLastTrack();
+
+      if(track.empty())
+      {
+         LOG_ERROR("track is empty");
+         event.edit_response("Error: track is empty!");
+         return;
+      }
 
       dpp::embed embed = dpp::embed()
          .set_color(0x5865F2)
@@ -62,6 +83,7 @@ void PlayCommand::execute(const dpp::slashcommand_t &event)
    } 
    catch (const std::exception& e) 
    {
+      LOG_ERROR(e.what());
       event.edit_response(std::string("Error: ") + e.what());
    }
 }

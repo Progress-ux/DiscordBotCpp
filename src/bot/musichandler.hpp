@@ -93,7 +93,15 @@ public:
     * @param url Video link.
     * @return response: title, uploader, duration(formatted), queue position  
     */
-   void addTrack(std::string &url);
+   void addTrackByLink(std::string &url);
+
+   /**
+    * @brief Adds a new track to the queue.
+    *
+    * @param query Video title.
+    * @return response: title, uploader, duration(formatted), queue position  
+    */
+   void addTrackByQuery(std::string &query);
 
    /**
     * @brief Returns the current track.

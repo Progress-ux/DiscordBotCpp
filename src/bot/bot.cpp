@@ -72,8 +72,11 @@ void Bot::register_commands()
       if(cmd->name() == "play")
       {
          slash.add_option(
-            dpp::command_option(dpp::co_string, "url", "Link to youtube video", true)
-         );       
+            dpp::command_option(dpp::co_string, "url", "Link to YouTube video", false)
+         );
+         slash.add_option(
+            dpp::command_option(dpp::co_string, "search", "Search query for YouTube", false)
+         );      
       }
       cmds.push_back(slash);
    }
