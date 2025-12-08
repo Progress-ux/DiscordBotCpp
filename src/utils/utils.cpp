@@ -3,7 +3,7 @@
 #include <regex>
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
-
+#include "core/log_macros.hpp"
 
 bool Utils::isValidUrl(std::string &url)
 {
@@ -18,7 +18,10 @@ void Utils::updateWorkingStreamLink(Track &track)
    CURL *curl = curl_easy_init();
    
    if (!curl) 
+   {
+      LOG_ERROR("CURL unavailable");
       return;
+   }
    
    CURLcode res;
    long response_code = 0;
@@ -33,7 +36,10 @@ void Utils::updateWorkingStreamLink(Track &track)
    curl_easy_cleanup(curl);
 
    if (res != CURLE_OK || response_code >= 400)
+   {
+      LOG_DEBUG("Update stream link, response code: " + response_code);
       updateInfo(track);
+   }
 }
 
 
@@ -62,7 +68,7 @@ void Utils::updateInfo(Track &track)
       );
       if(!yt_dlp)
       {
-         std::cerr << "Cannot run yt-dlp" << std::endl;
+         LOG_ERROR("Cannot run yt-dlp");
          return;
       }
    
@@ -76,7 +82,8 @@ void Utils::updateInfo(Track &track)
    
       if (result.empty())
       {
-         std::cerr << "Error: json empty" << std::endl;
+         LOG_ERROR("Error: json empty");
+         return;
       }
       
       track.setStreamUrl(result["url"]);

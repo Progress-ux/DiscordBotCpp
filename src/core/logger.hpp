@@ -42,6 +42,7 @@ private:
 
    std::string levelToString(LogLevel level);
    std::string currentTime();
+   std::string levelColor(LogLevel level);
 public:
    static Logger& instance();
 

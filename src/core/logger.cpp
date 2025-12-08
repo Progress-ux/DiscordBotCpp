@@ -28,6 +28,18 @@ std::string Logger::levelToString(LogLevel level)
    return "UNKNOWN";
 }
 
+std::string Logger::levelColor(LogLevel level)
+{
+   switch (level) 
+   {
+      case LogLevel::Debug: return "\033[36m"; // cyan
+      case LogLevel::Info:  return "\033[32m"; // green
+      case LogLevel::Warn:  return "\033[33m"; // yellow
+      case LogLevel::Error: return "\033[31m"; // red
+   }
+   return "\033[0m";
+}
+
 std::string Logger::currentTime()
 {
    auto now = std::chrono::system_clock::now();
@@ -97,7 +109,7 @@ void Logger::workerLoop()
          queue.pop();
          lock.unlock();
 
-         std::cout << msg.message << "\n";
+         std::cout << levelColor(msg.level) << msg.message << "\033[0m\n";
          if(file.is_open())
          {
             file << msg.message << "\n";

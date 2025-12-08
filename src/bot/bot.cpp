@@ -31,7 +31,7 @@ MusicHandler &Bot::getMusicHandler(dpp::snowflake guild_id)
 {
    if (music_handlers.find(guild_id) == music_handlers.end()) {
       music_handlers[guild_id] = std::make_unique<MusicHandler>(guild_id);
-      LOG_DEBUG("Created MusicHandler for server: " + guild_id);
+      LOG_DEBUG("Created MusicHandler for server: " + std::to_string(guild_id));
    }
 
    return *music_handlers[guild_id];

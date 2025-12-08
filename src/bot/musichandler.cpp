@@ -62,7 +62,7 @@ void MusicHandler::addTrack(std::string &url)
       }
 
       queue.push_back(track);
-      LOG_INFO("Track added to queue");
+      LOG_DEBUG("Track added to queue");
    }
    catch(...)
    {
@@ -146,7 +146,7 @@ Track &MusicHandler::getBackTrack()
 
 void MusicHandler::Player()
 {
-   LOG_INFO("Player loop started");
+   LOG_DEBUG("Player loop started");
 
    while(!stop_flag)
    {
@@ -162,7 +162,7 @@ void MusicHandler::Player()
 
             if(isHistoryEmpty())
             {
-               LOG_INFO("History is empty, stopping player");
+               LOG_DEBUG("History is empty, stopping player");
                break;
             }
             
@@ -178,7 +178,7 @@ void MusicHandler::Player()
 
             if(isQueueEmpty())
             {
-               LOG_INFO("Queue is empty, stopping player");
+               LOG_DEBUG("Queue is empty, stopping player");
                break;
             }
             
