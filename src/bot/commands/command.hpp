@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <dpp/dpp.h>
+#include "core/log_macros.hpp"
 
 class Command
 {

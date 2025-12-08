@@ -1,4 +1,6 @@
 #include "bot.hpp"
+#include "core/logger.hpp"
+#include "core/log_macros.hpp"
 #include "ping_command.hpp"
 #include "join_command.hpp"
 #include "play_command.hpp"
@@ -14,26 +16,35 @@
 
 int main(int argc, char const *argv[])
 {
-    Bot bot;
+    std::string path = "bot.log";
 
+    Bot bot;
+    Logger::instance().setLevel(LogLevel::Debug);
+    Logger::instance().openFile(path);
+
+    LOG_DEBUG("Commands are added");
     bot.add_command(std::make_shared<PingCommand>());
     
     bot.add_command(std::make_shared<JoinCommand>());
     bot.add_command(std::make_shared<LeaveCommand>(bot));
     
     bot.add_command(std::make_shared<StopCommand>(bot));
-
+    
     bot.add_command(std::make_shared<QueueCommand>(bot));
     bot.add_command(std::make_shared<HistoryCommand>(bot));
     
     bot.add_command(std::make_shared<PauseCommand>());
     bot.add_command(std::make_shared<ResumeCommand>());
-
+    
     bot.add_command(std::make_shared<PlayCommand>(bot));
     
     bot.add_command(std::make_shared<SkipCommand>(bot));
     bot.add_command(std::make_shared<BackCommand>(bot));
-
+    LOG_DEBUG("Commands added");
+    
+    LOG_INFO("Starting bot");
     bot.run();
+    LOG_INFO("Bot stopped");
+    Logger::instance().stop();
     return 0;
 }

@@ -2,6 +2,8 @@
 
 void JoinCommand::execute(const dpp::slashcommand_t& event)
 {
+   LOG_DEBUG("Command /join invoked");
+
    dpp::guild* g = dpp::find_guild(event.command.guild_id);
    if(!g)
    {

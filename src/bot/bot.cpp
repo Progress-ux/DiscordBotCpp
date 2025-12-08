@@ -1,5 +1,6 @@
 #include "bot.hpp"
 #include <fstream>
+#include "core/log_macros.hpp"
 #include <dpp/intents.h>
 
 Bot::Bot(const std::string& env_file) {
@@ -7,7 +8,7 @@ Bot::Bot(const std::string& env_file) {
 
    std::string token = getToken();
    if(token.empty()) {
-      std::cerr << "Error: TOKEN not found or empty!" << std::endl;
+      LOG_ERROR("Error: TOKEN not found or empty!");
       std::exit(EXIT_FAILURE);
    }
 
@@ -30,7 +31,7 @@ MusicHandler &Bot::getMusicHandler(dpp::snowflake guild_id)
 {
    if (music_handlers.find(guild_id) == music_handlers.end()) {
       music_handlers[guild_id] = std::make_unique<MusicHandler>(guild_id);
-      std::cout << "Created MusicHandler for server: " << guild_id << std::endl;
+      LOG_DEBUG("Created MusicHandler for server: " + guild_id);
    }
 
    return *music_handlers[guild_id];
@@ -40,14 +41,11 @@ std::string Bot::getToken()
 {
    auto it = env_vars.find("TOKEN");
    if(it != env_vars.end()) return it->second;
-   std::cerr << "Error: Token not found in .env" << std::endl;
    return ""; 
 }
 
 void Bot::register_events()
 {
-   // bot->on_log(dpp::utility::cout_logger());
-
    bot->on_slashcommand([this](const dpp::slashcommand_t& event) {
       for(auto& cmd : commands) {
          if(event.command.get_command_name() == cmd->name()) {
@@ -57,22 +55,8 @@ void Bot::register_events()
       }
    });
    bot->on_ready([this](const dpp::ready_t& event) {
-      bot->current_user_get_guilds([this](const dpp::confirmation_callback_t& event) {
-         if(event.is_error())
-         {
-            std::cerr << "Error: " << event.get_error().message << "\n";
-            return;
-         }
-
-         auto guilds = std::get<dpp::guild_map>(event.value);
-
-         for (auto& [id, guild] : guilds) {
-            std::cout << "Guild: " << guild.name << " | ID: " << id << "\n";
-         }
-      });
-
       if(dpp::run_once<struct register_bot_commands>()) {
-         std::cout << "Bot ready!" << std::endl;
+         LOG_INFO("Bot Ready");
          register_commands();
       }
    });
@@ -114,10 +98,6 @@ std::map<std::string, std::string> Bot::load_env(const std::string& filename)
                }
          }
          file.close();
-      }
-      else
-      {
-         std::cerr << "Error: Could not open .env file: " << filename << std::endl;
       }
       return vars;
 }

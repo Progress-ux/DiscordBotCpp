@@ -4,6 +4,8 @@ SkipCommand::SkipCommand(Bot& b) : bot(b) {}
 
 void SkipCommand::execute(const dpp::slashcommand_t &event)
 {
+   LOG_DEBUG("Command /skip invoked");
+
    event.thinking(); 
    auto &musicHandler = bot.getMusicHandler(event.command.guild_id);
 

@@ -7,6 +7,8 @@ PlayCommand::PlayCommand(Bot &b) : bot(b) {}
 
 void PlayCommand::execute(const dpp::slashcommand_t &event)
 {
+   LOG_DEBUG("Command /play invoked");
+
    event.thinking(); 
    
    try 

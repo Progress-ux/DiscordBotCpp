@@ -5,6 +5,8 @@ StopCommand::StopCommand(Bot &b) : bot(b) {}
 
 void StopCommand::execute(const dpp::slashcommand_t &event)
 {
+   LOG_DEBUG("Command /stop invoked");
+
    auto& musicHandler = bot.getMusicHandler(event.command.guild_id);
    if(musicHandler.voiceclient)
    { 

@@ -26,8 +26,8 @@ add_executable(bot main.cpp ${BOT_SOURCES})
 
 # Указываем, где искать заголовочные файлы
 target_include_directories(bot PRIVATE
+   ${CMAKE_CURRENT_SOURCE_DIR}
    ${CMAKE_CURRENT_SOURCE_DIR}/bot/
-   ${CMAKE_CURRENT_SOURCE_DIR}/core/
    ${CMAKE_CURRENT_SOURCE_DIR}/utils/
    ${CMAKE_CURRENT_SOURCE_DIR}/bot/commands/
 )

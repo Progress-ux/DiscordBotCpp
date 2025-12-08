@@ -2,6 +2,8 @@
 
 void HistoryCommand::execute(const dpp::slashcommand_t &event)
 {
+   LOG_DEBUG("Command /history invoked");
+
    event.thinking();
    auto &musicHandler = bot.getMusicHandler(event.command.guild_id);
 

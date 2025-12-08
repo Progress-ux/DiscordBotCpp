@@ -7,12 +7,20 @@
 #include <regex>
 #include <dpp/utility.h>
 #include <cmath>
+#include "core/log_macros.hpp"
 
 void MusicHandler::startPlayer()
 {
-   std::lock_guard<std::mutex> lock(player_mutex);
-   if (is_playing.load()) return; 
-   is_playing.store(true);
+   {
+      std::lock_guard<std::mutex> lock(player_mutex);
+      if (is_playing.load())
+      {
+         LOG_DEBUG("Player already running");
+         return; 
+      }
+      LOG_INFO("Starting music player");
+      is_playing.store(true);
+   }
    this->Player();
 }
 
@@ -37,19 +45,28 @@ void MusicHandler::addTrack(std::string &url)
    {
       std::lock_guard<std::mutex> guard (command_mutex);
 
+      LOG_DEBUG("Adding track from url");
+
       if(!Utils::isValidUrl(url))
+      {
+         LOG_WARN("Invalid url: " + url);
          throw std::runtime_error("Invalid link entered!");
+      }
 
       Track track = Utils::extractInfo(url);
       
       if(track.empty())
+      {
+         LOG_ERROR("Track extraction failed");
          throw std::runtime_error("Failed to retrieve information!");
+      }
 
       queue.push_back(track);
+      LOG_INFO("Track added to queue");
    }
-   catch(const std::exception& e)
+   catch(...)
    {
-      throw std::runtime_error(e.what());
+      throw;
    }
 }
 
@@ -129,6 +146,8 @@ Track &MusicHandler::getBackTrack()
 
 void MusicHandler::Player()
 {
+   LOG_INFO("Player loop started");
+
    while(!stop_flag)
    {
       try
@@ -138,19 +157,30 @@ void MusicHandler::Player()
             
          if(back_flag)
          {
+            LOG_DEBUG("Back track requested");
             back_flag.store(false);
 
             if(isHistoryEmpty())
+            {
+               LOG_INFO("History is empty, stopping player");
                break;
+            }
             
             Utils::updateWorkingStreamLink(getBackTrack());
          }
          else 
          {
-            skip_flag.store(false);
+            if(skip_flag)
+            {
+               LOG_DEBUG("Skip track requested");
+               skip_flag.store(false);
+            }
 
             if(isQueueEmpty())
+            {
+               LOG_INFO("Queue is empty, stopping player");
                break;
+            }
             
             Utils::updateWorkingStreamLink(getNextTrack());
          }
@@ -160,10 +190,11 @@ void MusicHandler::Player()
       }
       catch(const std::exception& e)
       {
-         std::cerr << e.what() << '\n';
+         LOG_ERROR(std::string("Player error: ") + e.what());
          break;
       }
    }
+   LOG_DEBUG("Player loop stoped");
    is_playing.store(false);
    stop_flag.store(false);
 }
@@ -186,7 +217,7 @@ void MusicHandler::playTrack(std::string stream_url)
 
    if (!ffmpeg) 
    {
-      std::cerr << "Failed to start FFmpeg\n";
+      LOG_ERROR("Failed to start FFmpeg");
       return;
    }
 
@@ -197,6 +228,9 @@ void MusicHandler::playTrack(std::string stream_url)
       while (voiceclient && voiceclient->is_paused())
          std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
+      if(skip_flag.load() || back_flag.load()) break;
+      if(stop_flag.load() || disconnect_flag.load()) break;
+      
       size_t bytes_read = fread(buf.data(), 1, buf.size(), ffmpeg.get());
       if (bytes_read == 0) 
       {
@@ -204,16 +238,13 @@ void MusicHandler::playTrack(std::string stream_url)
 
          if (ferror(ffmpeg.get())) 
          {
-            std::cerr << "Error reading FFmpeg output\n";
+            LOG_ERROR("Error reading FFmpeg output");
             break;
          }
       }
 
       if (bytes_read < buf.size())
          std::fill(buf.begin() + bytes_read, buf.end(), 0);
-
-      if(skip_flag.load() || back_flag.load()) break;
-      if(stop_flag.load() || disconnect_flag.load()) break;
       
       if(voiceclient && voiceclient->is_connected())
          voiceclient->send_audio_raw(reinterpret_cast<uint16_t*>(buf.data()), buf.size());
@@ -222,6 +253,7 @@ void MusicHandler::playTrack(std::string stream_url)
          if(i >= 5)
          {
             voiceclient = nullptr;
+            LOG_WARN("Voice client disconnected");
             break;
          }
          ++i;
@@ -231,5 +263,8 @@ void MusicHandler::playTrack(std::string stream_url)
    }
 
    if(voiceclient)
+   {
+      LOG_DEBUG("Audio stream stopped");
       voiceclient->stop_audio();
+   }
 }

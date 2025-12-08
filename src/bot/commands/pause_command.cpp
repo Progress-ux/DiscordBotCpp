@@ -2,6 +2,8 @@
 
 void PauseCommand::execute(const dpp::slashcommand_t &event)
 {
+   LOG_DEBUG("Command /pause invoked");
+
    event.thinking(); 
 
    dpp::voiceconn *v = event.from()->get_voice(event.command.guild_id);

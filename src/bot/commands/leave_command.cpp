@@ -2,6 +2,8 @@
 
 void LeaveCommand::execute(const dpp::slashcommand_t &event)
 {
+   LOG_DEBUG("Command /leave invoked");
+   
    event.thinking();
 
    auto &musicHandler = bot.getMusicHandler(event.command.guild_id);

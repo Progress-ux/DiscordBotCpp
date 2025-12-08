@@ -4,6 +4,8 @@ BackCommand::BackCommand(Bot &b) : bot(b) {}
 
 void BackCommand::execute(const dpp::slashcommand_t &event)
 {
+   LOG_DEBUG("Command /back invoked");
+   
    event.thinking(); 
    auto &musicHandler = bot.getMusicHandler(event.command.guild_id);
 
