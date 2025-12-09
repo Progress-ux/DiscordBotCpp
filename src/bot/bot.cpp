@@ -46,6 +46,8 @@ std::string Bot::getToken()
 
 void Bot::register_events()
 {
+   bot->on_log(dpp::utility::cout_logger());
+
    bot->on_slashcommand([this](const dpp::slashcommand_t& event) {
       for(auto& cmd : commands) {
          if(event.command.get_command_name() == cmd->name()) {
