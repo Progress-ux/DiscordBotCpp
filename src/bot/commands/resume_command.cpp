@@ -7,7 +7,7 @@ void ResumeCommand::execute(const dpp::slashcommand_t &event)
    event.thinking(); 
    auto &musicHandler = bot.getMusicHandler(event.command.guild_id);
 
-   if (!musicHandler.voiceclient || musicHandler.voiceclient->is_ready()) 
+   if (!musicHandler.voiceclient || !musicHandler.voiceclient->is_ready()) 
    {
       event.edit_response("Error: I'm not in the voice channel!");
       return;

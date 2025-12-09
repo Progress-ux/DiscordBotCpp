@@ -9,7 +9,7 @@ void PauseCommand::execute(const dpp::slashcommand_t &event)
 
    dpp::voiceconn *v = event.from()->get_voice(event.command.guild_id);
 
-   if (!musicHandler.voiceclient || musicHandler.voiceclient->is_ready()) 
+   if (!musicHandler.voiceclient || !musicHandler.voiceclient->is_ready()) 
    {
       event.edit_response("Error: I'm not in the voice channel!");
       return;
