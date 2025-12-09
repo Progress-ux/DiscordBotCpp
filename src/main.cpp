@@ -33,8 +33,8 @@ int main(int argc, char const *argv[])
     bot.add_command(std::make_shared<QueueCommand>(bot));
     bot.add_command(std::make_shared<HistoryCommand>(bot));
     
-    bot.add_command(std::make_shared<PauseCommand>());
-    bot.add_command(std::make_shared<ResumeCommand>());
+    bot.add_command(std::make_shared<PauseCommand>(bot));
+    bot.add_command(std::make_shared<ResumeCommand>(bot));
     
     bot.add_command(std::make_shared<PlayCommand>(bot));
     
