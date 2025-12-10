@@ -19,7 +19,7 @@ namespace Utils
     *
     * @param track Track to check.
     */
-   void updateWorkingStreamLink(Track &track);
+   void updateWorkingStreamLink(Track &track, long timeout_sec = 5);
 
    /**
     * @brief Formats the duration in seconds into a MM:SS or HH:MM::SS format string

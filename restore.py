@@ -1,25 +1,30 @@
 import subprocess
 import time
 import os
+import signal
 
 env = os.environ.copy()
 env["LD_LIBRARY_PATH"] = "/home/container/library"
 
-i = 0
+restarts = 0
+MAX_RESTARTS = 5
 
 subprocess.run(["chmod", "+x", "/home/container/bot"])
-while True:
+while restarts < MAX_RESTARTS:
     print("Запускаем программу...")
     process = subprocess.Popen(["/home/container/bot"], env=env)
-
     
-    # ждём, пока процесс завершится
-    process.wait()
-    i += 1
+    rc = process.wait()
+    
+    if rc < 0:
+        sig = -rc
+        print(f"Упала по сигналу: {signal.Signals(sig).name}")
+    else:
+        print(f"Завершилась с кодом {rc}")
+    
 
-    if i > 5:
-        print("Программа завершилась. Количество попыток закончилось")
-        break
-
-    print("Программа завершилась. Перезапуск через 5 секунд...")
+    restarts += 1
+    print("Перезапуск через 5 секунд...\n")
     time.sleep(5)
+
+print("⛔ Лимит перезапусков исчерпан")

@@ -220,7 +220,11 @@ void MusicHandler::Player()
          break;
       }
    }
+   history.push_front(current_track);
+   current_track = Track();
+
    LOG_DEBUG("Player loop stoped");
+
    is_playing.store(false);
    stop_flag.store(false);
 }

@@ -4,6 +4,9 @@
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
 #include "core/log_macros.hpp"
+#include <vector>
+#include <sys/wait.h>
+#include <unistd.h>
 
 bool Utils::isValidUrl(std::string &url)
 {
@@ -13,7 +16,7 @@ bool Utils::isValidUrl(std::string &url)
    return std::regex_match(url, url_regex);
 }
 
-void Utils::updateWorkingStreamLink(Track &track) 
+void Utils::updateWorkingStreamLink(Track &track, long timeout_sec) 
 {
    CURL *curl = curl_easy_init();
    
@@ -24,59 +27,112 @@ void Utils::updateWorkingStreamLink(Track &track)
    }
    
    CURLcode res;
-   long response_code = 0;
+   long http_code = 0;
 
    curl_easy_setopt(curl, CURLOPT_URL, track.getStreamUrl().c_str());
-   curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
+   curl_easy_setopt(curl, CURLOPT_NOBODY, 0L);          
+   curl_easy_setopt(curl, CURLOPT_RANGE, "0-0");        
    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-   curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
+   curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout_sec);
+   curl_easy_setopt(curl, CURLOPT_USERAGENT,
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+
+   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION,
+      +[](char*, size_t s, size_t n, void*) {
+         return s * n;
+      });
 
    res = curl_easy_perform(curl);
-   curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+
+   if (res == CURLE_OK)
+      curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
    curl_easy_cleanup(curl);
 
-   if (res != CURLE_OK || response_code >= 400)
+   if (res != CURLE_OK)
    {
-      LOG_DEBUG("Update stream link, response code: " + std::to_string(response_code));
+      LOG_ERROR(std::string("CURL error: ") + curl_easy_strerror(res));
+      updateInfo(track);
+      return;
+   }
+
+   if (http_code >= 400)
+   {
+      LOG_DEBUG("HTTP error code: " + std::to_string(http_code));
       updateInfo(track);
    }
 }
-
 
 void Utils::updateInfo(Track &track)
 {
    try
    {
-      std::string yt_dlp_cmd =
-               "/home/container/.local/bin/yt-dlp "
-               "-f bestaudio/best "
-               "--dump-single-json "
-               "--no-playlist "
-               "--quiet "
-               "--no-warnings "
-               "--extractor-args \"youtube:player_client=default\" "
-               "--add-header \"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36\" "
-               "--add-header \"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\" "
-               "--add-header \"Accept-Language: en-us,en;q=0.5\" "
-               "--add-header \"Sec-Fetch-Mode: navigate\" "
-               "\"" + track.getUrl() + "\" 2>/dev/null";
-   
-      std::unique_ptr<FILE, decltype(&pclose)> yt_dlp(
-         popen(yt_dlp_cmd.c_str(), "r"),
-         pclose
-      );
-      if(!yt_dlp)
+      int pipefd[2];
+      pipe(pipefd);
+
+      pid_t pid = fork();
+      if(pid == 0)
       {
-         LOG_ERROR("Cannot run yt-dlp");
+         dup2(pipefd[1], STDOUT_FILENO);
+         dup2(pipefd[1], STDERR_FILENO);
+
+         close(pipefd[0]);
+         close(pipefd[1]);
+
+         std::vector<std::string> str_args = {
+            "/home/container/.local/bin/yt-dlp",
+            "-f",
+            "bestaudio/best",
+            "--dump-single-json",
+            "--no-playlist",
+            "--quiet",
+            "--no-warnings",
+            "--extractor-args",
+            "youtube:player_client=default",
+            "--add-header",
+            "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+            "--add-header",
+            "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "--add-header",
+            "Accept-Language: en-us,en;q=0.5",
+            "--add-header",
+            "Sec-Fetch-Mode: navigate",
+            track.getUrl()
+         };
+
+         std::vector<char*> args;
+         for(auto& s : str_args)
+            args.push_back(s.data());
+         args.push_back(nullptr);
+
+         execvp("/home/container/.local/bin/yt-dlp", args.data());
+         _exit(1);
+      }
+      close(pipefd[1]);
+      
+      std::string json_data;
+      char buffer[4096];
+      ssize_t n;
+
+      while ((n = read(pipefd[0], buffer, sizeof(buffer))) > 0)
+         json_data.append(buffer, n);
+
+      close(pipefd[0]);
+      int status;
+      waitpid(pid, &status, 0);
+
+      if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+      {
+         LOG_ERROR("yt-dlp failed");
          return;
       }
-   
-      std::string json_data;
-      char buffer[1024];
-      while (fgets(buffer, sizeof(buffer), yt_dlp.get())) {
-         json_data += buffer;
+
+      if (json_data.empty())
+      {
+         LOG_ERROR("yt-dlp returned empty output");
+         return;
       }
-   
+
       nlohmann::json result = nlohmann::json::parse(json_data);
    
       if (result.empty())
@@ -85,7 +141,7 @@ void Utils::updateInfo(Track &track)
          return;
       }
       
-      track.setStreamUrl(result["url"]);
+      track.setStreamUrl(result.value("url", ""));
    }
    catch(const std::exception& e)
    {
@@ -98,32 +154,62 @@ Track Utils::extractInfoByName(std::string &query)
    Track track;
    try
    {
-      std::string yt_dlp_cmd =
-               "/home/container/.local/bin/yt-dlp "
-               "-f bestaudio/best "
-               "--dump-single-json "
-               "--no-playlist "
-               "--quiet "
-               "--no-warnings "
-               "--extractor-args \"youtube:player_client=default\" "
-               "--add-header \"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36\" "
-               "--add-header \"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\" "
-               "--add-header \"Accept-Language: en-us,en;q=0.5\" "
-               "--add-header \"Sec-Fetch-Mode: navigate\" "
-               "\"ytsearch1:" + query + "\" 2>/dev/null";
+      int pipefd[2];
+      pipe(pipefd);
 
-      std::unique_ptr<FILE, decltype(&pclose)> yt_dlp(
-         popen(yt_dlp_cmd.c_str(), "r"),
-         pclose
-      );
-      if(!yt_dlp)
-         throw std::runtime_error("Cannot run yt-dlp");
+      pid_t pid = fork();
+      if(pid == 0)
+      {
+         dup2(pipefd[1], STDOUT_FILENO);
+         dup2(pipefd[1], STDERR_FILENO);
 
-      std::string json_data;
-      char buffer[1024];
-      while (fgets(buffer, sizeof(buffer), yt_dlp.get())) {
-         json_data += buffer;
+         close(pipefd[0]);
+         close(pipefd[1]);
+
+         std::vector<std::string> str_args = {
+            "/home/container/.local/bin/yt-dlp",
+            "-f",
+            "bestaudio/best",
+            "--dump-single-json",
+            "--no-playlist",
+            "--quiet",
+            "--no-warnings",
+            "--extractor-args",
+            "youtube:player_client=default",
+            "--add-header",
+            "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+            "--add-header",
+            "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "--add-header",
+            "Accept-Language: en-us,en;q=0.5",
+            "--add-header",
+            "Sec-Fetch-Mode: navigate",
+            "ytsearch1:" + query,
+         };
+
+         std::vector<char*> args;
+         for(auto& s : str_args)
+            args.push_back(s.data());
+         args.push_back(nullptr);
+
+         execvp("/home/container/.local/bin/yt-dlp", args.data());
+         _exit(1);
       }
+      close(pipefd[1]);
+      
+      std::string json_data;
+      char buffer[4096];
+      ssize_t n;
+
+      while ((n = read(pipefd[0], buffer, sizeof(buffer))) > 0)
+         json_data.append(buffer, n);
+
+      close(pipefd[0]);
+      int status;
+      waitpid(pid, &status, 0);
+
+      if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+         throw std::runtime_error("yt-dlp failed");
 
       if (json_data.empty())
          throw std::runtime_error("yt-dlp returned empty output");
@@ -161,32 +247,62 @@ Track Utils::extractInfo(std::string &url)
    Track track;
    try
    {
-      std::string yt_dlp_cmd =
-               "/home/container/.local/bin/yt-dlp "
-               "-f bestaudio/best "
-               "--dump-single-json "
-               "--no-playlist "
-               "--quiet "
-               "--no-warnings "
-               "--extractor-args \"youtube:player_client=default\" "
-               "--add-header \"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36\" "
-               "--add-header \"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\" "
-               "--add-header \"Accept-Language: en-us,en;q=0.5\" "
-               "--add-header \"Sec-Fetch-Mode: navigate\" "
-               "\"" + url + "\" 2>/dev/null";
+      int pipefd[2];
+      pipe(pipefd);
 
-      std::unique_ptr<FILE, decltype(&pclose)> yt_dlp(
-         popen(yt_dlp_cmd.c_str(), "r"),
-         pclose
-      );
-      if(!yt_dlp)
-         throw std::runtime_error("Cannot run yt-dlp");
-   
-      std::string json_data;
-      char buffer[1024];
-      while (fgets(buffer, sizeof(buffer), yt_dlp.get())) {
-         json_data += buffer;
+      pid_t pid = fork();
+      if(pid == 0)
+      {
+         dup2(pipefd[1], STDOUT_FILENO);
+         dup2(pipefd[1], STDERR_FILENO);
+
+         close(pipefd[0]);
+         close(pipefd[1]);
+
+         std::vector<std::string> str_args = {
+            "/home/container/.local/bin/yt-dlp",
+            "-f",
+            "bestaudio/best",
+            "--dump-single-json",
+            "--no-playlist",
+            "--quiet",
+            "--no-warnings",
+            "--extractor-args",
+            "youtube:player_client=default",
+            "--add-header",
+            "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+            "--add-header",
+            "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "--add-header",
+            "Accept-Language: en-us,en;q=0.5",
+            "--add-header",
+            "Sec-Fetch-Mode: navigate",
+            url
+         };
+
+         std::vector<char*> args;
+         for(auto& s : str_args)
+            args.push_back(s.data());
+         args.push_back(nullptr);
+
+         execvp("/home/container/.local/bin/yt-dlp", args.data());
+         _exit(1);
       }
+      close(pipefd[1]);
+      
+      std::string json_data;
+      char buffer[4096];
+      ssize_t n;
+
+      while ((n = read(pipefd[0], buffer, sizeof(buffer))) > 0)
+         json_data.append(buffer, n);
+
+      close(pipefd[0]);
+      int status;
+      waitpid(pid, &status, 0);
+
+      if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+         throw std::runtime_error("yt-dlp failed");
 
       if (json_data.empty())
          throw std::runtime_error("yt-dlp returned empty output");
