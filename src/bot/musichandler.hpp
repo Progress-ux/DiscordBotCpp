@@ -177,9 +177,19 @@ public:
    bool isQueueEmpty();
 
    /**
+    * @brief Completely clears history and queue.
+    */
+   void clearAll();
+
+   /**
     * @brief Clears the queue completely.
     */
-   void clear();
+   void clearQueue();
+
+   /**
+    * @brief Clears the history completely.
+    */
+   void clearHistory();
 
    /**
     * @brief Returns the number of tracks in the queue.

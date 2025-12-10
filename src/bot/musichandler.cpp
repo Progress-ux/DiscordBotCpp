@@ -108,9 +108,20 @@ bool MusicHandler::isQueueEmpty()
    return queue.empty();
 }
 
-void MusicHandler::clear()
+void MusicHandler::clearAll()
 {
    queue.clear();
+   history.clear();
+}
+
+void MusicHandler::clearQueue()
+{
+   queue.clear();
+}
+
+void MusicHandler::clearHistory()
+{
+   history.clear();
 }
 
 size_t MusicHandler::queueSize()

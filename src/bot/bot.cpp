@@ -80,6 +80,19 @@ void Bot::register_commands()
             dpp::command_option(dpp::co_string, "search", "Search query for YouTube", false)
          );      
       }
+
+      if(cmd->name() == "clear")
+      {
+         slash.add_option(
+            dpp::command_option(dpp::co_sub_command, "all", "Clear history and queue", false)
+         );
+         slash.add_option(
+            dpp::command_option(dpp::co_sub_command, "history", "Clear history", false)
+         );
+         slash.add_option(
+            dpp::command_option(dpp::co_sub_command, "queue", "Clear queue", false)
+         );
+      }
       cmds.push_back(slash);
    }
    

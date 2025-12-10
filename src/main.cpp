@@ -9,6 +9,7 @@
 #include "resume_command.hpp"
 #include "skip_command.hpp"
 #include "back_command.hpp"
+#include "clear_command.hpp"
 #include "leave_command.hpp"
 #include "queue_command.hpp"
 #include "history_command.hpp"
@@ -22,8 +23,9 @@ int main(int argc, char const *argv[])
     Logger::instance().setLevel(LogLevel::Debug);
     Logger::instance().openFile(path);
 
-    LOG_DEBUG("Commands are added");
+    LOG_DEBUG("Start adding commands");
     bot.add_command(std::make_shared<PingCommand>());
+    bot.add_command(std::make_shared<ClearCommand>(bot));
     
     bot.add_command(std::make_shared<JoinCommand>());
     bot.add_command(std::make_shared<LeaveCommand>(bot));

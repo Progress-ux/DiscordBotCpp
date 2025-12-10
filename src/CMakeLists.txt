@@ -19,7 +19,9 @@ set(BOT_SOURCES
    bot/commands/resume_command.cpp
    
    bot/commands/play_command.cpp
+
    bot/commands/ping_command.cpp
+   bot/commands/clear_command.cpp
 )
 
 add_executable(bot main.cpp ${BOT_SOURCES})
