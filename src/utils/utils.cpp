@@ -51,7 +51,7 @@ void Utils::updateWorkingStreamLink(Track &track, long timeout_sec)
 
    if (res != CURLE_OK)
    {
-      LOG_ERROR(std::string("CURL error: ") + curl_easy_strerror(res));
+      LOG_DEBUG(std::string("CURL error: ") + curl_easy_strerror(res));
       updateInfo(track);
       return;
    }
