@@ -13,6 +13,7 @@
 #include "leave_command.hpp"
 #include "queue_command.hpp"
 #include "history_command.hpp"
+#include "repeat_command.hpp"
 #include <memory>
 
 int main(int argc, char const *argv[])
@@ -26,6 +27,8 @@ int main(int argc, char const *argv[])
     LOG_DEBUG("Start adding commands");
     bot.add_command(std::make_shared<PingCommand>());
     bot.add_command(std::make_shared<ClearCommand>(bot));
+
+    bot.add_command(std::make_shared<RepeatCommand>(bot));
     
     bot.add_command(std::make_shared<JoinCommand>());
     bot.add_command(std::make_shared<LeaveCommand>(bot));

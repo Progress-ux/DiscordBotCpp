@@ -34,6 +34,7 @@ private:
    std::atomic<bool> back_flag;               ///< Flag for moving to the previous track.
    std::atomic<bool> disconnect_flag;         ///< Completion flag when the bot is disconnected.
    std::atomic<bool> is_playing;              ///< Flag is playing
+   std::atomic<bool> is_repeat;               ///< Flag is repeat
    
    /**
     * @brief Plays the audio stream through FFmpeg and sends PCM data to the voice channel.
@@ -162,7 +163,8 @@ public:
    void setDisconnectFlag(bool s) noexcept { disconnect_flag.store(s); }
    bool isDisconnectFlag() const noexcept { return disconnect_flag.load(); }
 
-   
+   void setRepeatFlag(bool s) noexcept { is_repeat.store(s); }
+   bool isRepeatFlag() const noexcept { return is_repeat.load(); }
 
    /**
     * @brief Checks if the history is empty.

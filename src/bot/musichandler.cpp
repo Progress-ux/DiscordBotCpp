@@ -205,7 +205,7 @@ void MusicHandler::Player()
             
             Utils::updateWorkingStreamLink(getBackTrack());
          }
-         else 
+         else if(skip_flag)
          {
             if(skip_flag)
             {
@@ -213,6 +213,20 @@ void MusicHandler::Player()
                skip_flag.store(false);
             }
 
+            if(isQueueEmpty())
+            {
+               LOG_DEBUG("Queue is empty, stopping player");
+               break;
+            }
+            
+            Utils::updateWorkingStreamLink(getNextTrack());
+         }
+         else if(is_repeat)
+         {
+            Utils::updateWorkingStreamLink(getCurrentTrack());
+         }
+         else
+         {
             if(isQueueEmpty())
             {
                LOG_DEBUG("Queue is empty, stopping player");

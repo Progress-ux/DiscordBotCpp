@@ -5,6 +5,8 @@ set(BOT_SOURCES
    core/logger.cpp
    utils/utils.cpp
 
+   bot/commands/repeat_command.cpp
+
    bot/commands/skip_command.cpp
    bot/commands/back_command.cpp
    bot/commands/stop_command.cpp
