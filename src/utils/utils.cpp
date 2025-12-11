@@ -313,12 +313,14 @@ Track Utils::extractInfo(std::string &url)
          throw std::runtime_error("json empty");
    
       // Stores track information
-      track.setTitle(result["title"]);
-      track.setAuthor(result["uploader"]);
-      track.setUrl(track.getBeginUrl() + (std::string)result["id"]);
+      track.setTitle(result.value("title", ""));
+      track.setAuthor(result.value("uploader", ""));
+      std::string id = result.value("id", "");
+      if(!id.empty())
+         track.setUrl(track.getBeginUrl() + id);
       track.setDuration(formatDuration(std::to_string(result.value("duration", 0))));
-      track.setStreamUrl(result["url"]);
-      track.setThumbnail(result["thumbnail"]); 
+      track.setStreamUrl(result.value("url", ""));
+      track.setThumbnail(result.value("thumbnail", "")); 
       return track;
    }
    catch(const std::exception& e)
