@@ -15,10 +15,10 @@ void ResumeCommand::execute(const dpp::slashcommand_t &event)
 
    if (!musicHandler.voiceclient->is_paused())
    {
-      event.reply("Music not paused");
+      event.edit_response("Music not paused");
       return;
    }
    
    musicHandler.voiceclient->pause_audio(false);
-   event.reply("Audio resume");
+   event.edit_response("Audio resume");
 }

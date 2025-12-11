@@ -17,10 +17,10 @@ void PauseCommand::execute(const dpp::slashcommand_t &event)
 
    if (!musicHandler.voiceclient->is_playing())
    {
-      event.reply("Music not playing");
+      event.edit_response("Music not playing");
       return;
    }
    
    musicHandler.voiceclient->pause_audio(true);
-   event.reply("Audio paused");
+   event.edit_response("Audio paused");
 }

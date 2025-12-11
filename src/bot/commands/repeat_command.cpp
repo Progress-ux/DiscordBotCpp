@@ -9,5 +9,5 @@ void RepeatCommand::execute(const dpp::slashcommand_t &event)
 
    musicHandler.setRepeatFlag(!musicHandler.isRepeatFlag());
    std::string status = musicHandler.isRepeatFlag() ? "enabled" : "disabled";
-   event.reply("Repeat is: " + status);
+   event.edit_response("Repeat is: " + status);
 }
